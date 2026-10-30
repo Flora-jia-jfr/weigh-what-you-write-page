@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Unpublished proposal: keep it out of search results. Remove this line once the work is public. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Do reasoning models weigh what they write? · Proposal v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Figtree:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #faf8f3;
+  --card: #f2eee4;
+  --chart: #fcfcfb;
+  --ink: #1f1d1a;
+  --ink-2: #55524b;
+  --muted: #6c685f;
+  --rule: #e4dfd2;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --keep: #e2eeec;  --keep-ink: #0f5e57;
+  --back: #f6e5da;  --back-ink: #a8441f;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --sans: "Figtree", "Helvetica Neue", Helvetica, sans-serif;
+  --serif: "Fraunces", Georgia, serif;
+  --mono: "JetBrains Mono", Menlo, Consolas, monospace;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141412; --card: #1e1d1a; --chart: #1a1a19;
+  --ink: #efece5; --ink-2: #c4c0b5; --muted: #9a968c;
+  --rule: #302e29; --grid: #2c2c2a; --axis: #383835;
+  --keep: #12302d; --keep-ink: #6cc3b8;
+  --back: #3a2318; --back-ink: #ec9a74;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+body { background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 17px; line-height: 1.65; -webkit-font-smoothing: antialiased; counter-reset: sec; }
+a { color: inherit; text-decoration-color: var(--axis); text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--back-ink); }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 12px; top: 12px; z-index: 20; background: var(--bg); padding: 6px 10px; }
+sub { font-size: .72em; line-height: 0; }
+
+/* nav */
+nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 90%, transparent); backdrop-filter: blur(8px); }
+nav.top::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--rule); }
+nav.top .in { max-width: 960px; margin: 0 auto; padding: 0 28px; height: 58px; display: flex; align-items: center; gap: 24px; font-size: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; margin-right: auto; font-family: var(--serif); font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+.brand svg { display: block; }
+.brand small { font-family: var(--mono); font-weight: 400; font-size: 11.5px; color: var(--muted); letter-spacing: .02em; }
+nav.top a.l { text-decoration: none; color: var(--ink-2); position: relative; }
+nav.top a.l:hover { color: var(--ink); }
+nav.top a.l:hover::after { content: ""; position: absolute; left: 0; right: 0; bottom: -4px; height: 2px; background: var(--back-ink); border-radius: 2px; }
+#theme { background: none; border: 1px solid var(--rule); color: var(--ink-2); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 12px; }
+
+main { max-width: 960px; margin: 0 auto; padding: 0 28px; }
+section { padding: 64px 0 60px; border-top: 1px solid var(--rule); display: grid; grid-template-columns: 150px minmax(0, 1fr); column-gap: 36px; }
+section > * { grid-column: 2; }
+section > h2 { grid-column: 1 / -1; display: grid; grid-template-columns: 150px 1fr; column-gap: 36px; align-items: baseline; }
+section > h2::before { counter-increment: sec; content: counter(sec, decimal-leading-zero); font-family: var(--mono); font-size: 13px; font-weight: 400; color: var(--back-ink); letter-spacing: .04em; }
+section > .wide { grid-column: 1 / -1; }
+
+/* hero */
+.hero { padding: 70px 0 64px; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 44px; align-items: center; }
+.meta { font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: .03em; margin-bottom: 18px; }
+.hero h1 { font-family: var(--serif); font-weight: 600; font-size: 48px; line-height: 1.07; letter-spacing: -.02em; margin-bottom: 20px; }
+.hero h1 em { font-style: normal; color: var(--back-ink); }
+.hero .kick { font-family: var(--serif); font-size: 24px; line-height: 1.35; margin: -6px 0 18px; color: var(--ink); }
+.hero .sub { font-size: 18px; line-height: 1.6; color: var(--ink-2); }
+.herofig { background: var(--card); border-radius: 14px; padding: 16px 14px 12px; }
+.herofig svg { display: block; width: 100%; height: auto; }
+.herofig figcaption { font-size: 12.5px; color: var(--muted); margin-top: 8px; line-height: 1.45; }
+.rqs { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-top: 42px; }
+.rqs li { border-top: 2px solid var(--ink); padding-top: 12px; font-size: 14.5px; line-height: 1.5; color: var(--ink-2); }
+.rqs li b { display: block; font-family: var(--serif); font-weight: 600; font-size: 18px; color: var(--ink); margin-bottom: 4px; line-height: 1.3; }
+.rqs .q { font-family: var(--mono); font-size: 11.5px; color: var(--back-ink); letter-spacing: .06em; }
+.links { display: flex; gap: 18px; margin-top: 34px; font-size: 14.5px; flex-wrap: wrap; align-items: center; }
+.links a { text-decoration: none; color: var(--ink); font-weight: 500; border-bottom: 1.5px solid var(--back-ink); padding-bottom: 1px; }
+.links a::after { content: " →"; color: var(--back-ink); }
+.links .tgt { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+[data-repo-path].off { display: none; }
+
+/* hero diagram */
+.dg-band { fill: var(--bg); stroke: var(--rule); stroke-width: 1; }
+.dg-box { fill: var(--chart); stroke: var(--axis); stroke-width: 1.25; }
+.dg-box.hot { fill: var(--back); stroke: var(--back-ink); stroke-width: 1.5; }
+.dg-t { fill: var(--ink); font: 600 13px var(--sans); }
+.dg-s { fill: var(--muted); font: 11px var(--sans); }
+.dg-l { fill: var(--muted); font: 9.5px var(--mono); letter-spacing: .06em; }
+.dg-i { fill: var(--back-ink); font: 500 11px var(--mono); }
+.dg-r { fill: var(--ink-2); font: italic 11px var(--sans); }
+.dg-w, .dg-q, .dg-e { fill: none; stroke-width: 1.75; stroke-linejoin: round; }
+.dg-w { stroke: var(--back-ink); } .dg-q { stroke: var(--keep-ink); } .dg-e { stroke: var(--muted); }
+.ah-w { fill: var(--back-ink); } .ah-q { fill: var(--keep-ink); } .ah-e { fill: var(--muted); }
+
+h2 { font-family: var(--serif); font-weight: 600; font-size: 30px; letter-spacing: -.015em; line-height: 1.2; margin-bottom: 18px; }
+h3 { font-family: var(--serif); font-weight: 600; font-size: 20px; letter-spacing: -.005em; margin: 34px 0 8px; }
+p + p { margin-top: 14px; }
+.lede { color: var(--ink-2); font-size: 18.5px; margin-bottom: 22px; }
+b, strong { font-weight: 600; }
+code, .mono { font-family: var(--mono); font-size: .84em; background: var(--card); border-radius: 4px; padding: 1px 5px; }
+
+/* figures */
+figure { margin: 24px 0 8px; }
+figcaption { font-size: 13.5px; color: var(--ink-2); margin-top: 10px; line-height: 1.5; }
+figcaption b { color: var(--ink); font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .03em; margin-right: 4px; }
+.box { background: var(--card); border-radius: 12px; padding: 16px 18px; }
+.box .lbl, .chainbox .lbl, .vcard .lbl, .callout .lbl { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.box.b { background: var(--back); }
+.box.b .lbl { color: var(--back-ink); }
+
+/* two vignettes */
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.vcard { background: var(--chart); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px 12px; display: flex; flex-direction: column; }
+.vcard p { font-size: 15.5px; line-height: 1.55; flex: 1; }
+.vcard mark { background: var(--back); color: var(--back-ink); font-weight: 600; padding: 1px 4px; border-radius: 4px; }
+.vfoot { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule); font-size: 13.5px; color: var(--ink-2); }
+.bayes { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: start; margin-top: 14px; background: var(--card); border-radius: 12px; padding: 14px 16px; }
+.bayes .tv { font-family: var(--serif); font-weight: 600; font-size: 18px; line-height: 1.25; }
+.bayes .tk { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.bayes .hot .tv { color: var(--back-ink); }
+.bayes .op { font-family: var(--serif); font-size: 22px; color: var(--muted); line-height: 1.1; }
+.bayes .after { grid-column: 1 / -1; font-size: 15px; color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: 10px; margin-top: 2px; }
+
+/* equation */
+.eq { background: var(--card); border-radius: 12px; padding: 16px 18px; font-family: var(--serif); font-size: 19px; line-height: 1.6; text-align: center; }
+.eq i { font-style: italic; }
+.eq .sep { display: inline-block; width: 28px; }
+
+/* tables */
+table.t { width: 100%; border-collapse: collapse; font-size: 14.5px; line-height: 1.45; }
+table.t th { text-align: left; font-family: var(--mono); font-weight: 400; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: 0 12px 8px 0; border-bottom: 1.5px solid var(--ink); vertical-align: bottom; }
+table.t td { padding: 10px 12px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+table.t td.n { font-weight: 600; white-space: nowrap; }
+table.t td .g, table.t td.g, .g { color: var(--ink-2); }
+.y { font-weight: 600; color: var(--keep-ink); } .no { color: var(--muted); }
+td.us, th.us { background: var(--back); padding-left: 10px !important; }
+th.us { color: var(--back-ink) !important; }
+.tscroll { overflow-x: auto; }
+.tscroll table.t { min-width: 640px; }
+
+/* two cards */
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0 22px; }
+.two .box ul, .box ul.dots { list-style: none; font-size: 14.5px; line-height: 1.5; }
+.two .box li, .box ul.dots li { margin-top: 8px; padding-left: 14px; position: relative; }
+.two .box li::before, .box ul.dots li::before { content: ""; position: absolute; left: 0; top: .68em; width: 6px; height: 6px; border-radius: 50%; background: var(--axis); }
+.two .box.b li::before, .box.b ul.dots li::before { background: var(--back-ink); }
+.two .box .cite { color: var(--muted); }
+.box ul.steps { list-style: none; margin-top: 4px; }
+.box ul.steps li { font-size: 15.5px; line-height: 1.55; margin-top: 8px; }
+.box .small { font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+/* callout */
+.callout { border-left: 3px solid var(--back-ink); background: var(--back); border-radius: 0 12px 12px 0; padding: 14px 18px; margin: 22px 0; font-size: 16px; }
+.callout .lbl { color: var(--back-ink); margin-bottom: 4px; }
+.callout ol { margin: 6px 0 0 20px; }
+.callout li + li { margin-top: 8px; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 22px 0 6px; }
+.stat { border-top: 2px solid var(--ink); padding-top: 10px; }
+.stat .v { font-family: var(--sans); font-size: 32px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+.stat .v small { font-size: 16px; color: var(--muted); font-weight: 500; }
+.stat .k { font-size: 13.5px; color: var(--ink-2); margin-top: 4px; line-height: 1.4; }
+
+/* charts */
+.chart-card { background: var(--chart); border: 1px solid var(--rule); border-radius: 12px; padding: 16px 18px 12px; position: relative; }
+.chart-card .ct { font-weight: 600; font-size: 14.5px; padding-right: 70px; }
+.chart-card .cs { font-size: 12.5px; color: var(--muted); }
+.legend { display: flex; gap: 16px; font-size: 12.5px; color: var(--ink-2); margin: 10px 0 4px; flex-wrap: wrap; }
+.legend .lk { display: inline-block; width: 16px; height: 0; border-top: 2px solid; vertical-align: 4px; margin-right: 6px; }
+.legend .lk.s1 { border-color: var(--s1); } .legend .lk.s2 { border-color: var(--s2); } .legend .lk.s3 { border-color: var(--s3); }
+.legend .lk.ref { border-top: 1.5px dashed var(--muted); }
+.legend .lk.gs { width: 10px; height: 10px; border: 1.5px solid var(--ink-2); border-radius: 50%; vertical-align: -1px; }
+.legend .lk.bar { width: 14px; height: 8px; border: 0; background: var(--s1); border-radius: 3px; vertical-align: 0; }
+.legend .lk.dia { width: 9px; height: 9px; border: 0; background: var(--back-ink); transform: rotate(45deg); vertical-align: 0; }
+.viewtable { position: absolute; right: 12px; top: 12px; font: 500 11px/1 var(--mono); color: var(--muted); background: none; border: 1px solid var(--rule); border-radius: 5px; padding: 5px 8px; cursor: pointer; }
+.viewtable:hover { color: var(--ink); }
+table.dt { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0 6px; }
+table.dt th, table.dt td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; vertical-align: top; }
+table.dt th { color: var(--muted); font-weight: 500; }
+.hidden { display: none !important; }
+svg text { font-family: var(--sans); }
+.mult { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 22px; margin-top: 8px; }
+.panel .ph { font-size: 13.5px; color: var(--ink-2); line-height: 1.35; }
+.panel .ph b { font-family: var(--mono); font-weight: 500; font-size: 12px; color: var(--ink); letter-spacing: .02em; }
+.panel .pn { font-size: 12px; color: var(--muted); }
+.panel svg { display: block; width: 100%; height: auto; margin-top: 4px; }
+.frame { display: grid; grid-template-columns: 1.65fr 1fr; gap: 22px; margin-top: 8px; }
+.gantt svg { display: block; width: 100%; height: auto; margin-top: 6px; }
+svg .gl { stroke: var(--grid); stroke-width: 1; }
+svg .ax { stroke: var(--axis); stroke-width: 1; }
+svg .ref { stroke: var(--muted); stroke-width: 1.25; stroke-dasharray: 4 4; }
+svg .tk { fill: var(--muted); font-size: 11px; }
+svg .tk.c { font-variant-numeric: tabular-nums; }
+svg .halo { paint-order: stroke; stroke: var(--chart); stroke-width: 3px; stroke-linejoin: round; }
+svg .grp { fill: var(--ink-2); font-size: 10.5px; font-style: italic; }
+svg .ln { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg .ln.s1 { stroke: var(--s1); } svg .ln.s2 { stroke: var(--s2); } svg .ln.s3 { stroke: var(--s3); }
+svg .dot { stroke: var(--chart); stroke-width: 2; }
+svg .dot.s1 { fill: var(--s1); } svg .dot.s2 { fill: var(--s2); } svg .dot.s3 { fill: var(--s3); }
+svg .dot0 { fill: var(--ink-2); stroke: var(--chart); stroke-width: 2; }
+svg .lab { fill: var(--ink-2); font-size: 11.5px; font-weight: 500; }
+svg .guess { fill: var(--chart); stroke: var(--ink-2); stroke-width: 1.5; }
+svg .pend { fill: var(--muted); font-size: 12px; font-style: italic; }
+svg .bar { fill: var(--s1); }
+svg .gate { fill: var(--back-ink); stroke: var(--chart); stroke-width: 2; }
+svg .now { stroke: var(--back-ink); stroke-width: 1.25; }
+svg .nowt { fill: var(--back-ink); font: 500 10.5px var(--mono); }
+svg .tlk { fill: var(--ink); font-size: 13px; }
+svg .tlk.b { font-weight: 600; }
+
+/* RQ tag in tables */
+.pill { font-family: var(--mono); font-size: 11.5px; color: var(--back-ink); letter-spacing: .06em; white-space: nowrap; }
+
+/* step chain */
+.chain { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13.5px; }
+.chip { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 5px 11px; }
+.chip i { font-style: normal; font-family: var(--mono); font-size: 11px; color: var(--muted); margin-right: 6px; }
+.chip.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip.k { background: var(--keep); border-color: transparent; color: var(--keep-ink); font-weight: 600; }
+.chip.b { background: var(--back); border-color: transparent; color: var(--back-ink); font-weight: 600; }
+.arrow { color: var(--muted); font-size: 12px; }
+.nw { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.tscroll.scrolls::before { content: "scroll →"; display: block; text-align: right; font: 11px var(--mono); color: var(--muted); margin-bottom: 4px; }
+.chainbox { background: var(--card); border-radius: 12px; padding: 14px 16px; margin-top: 10px; }
+.chainbox ul.steps { list-style: none; margin-top: 10px; }
+.chainbox ul.steps li { font-size: 14.5px; line-height: 1.5; margin-top: 5px; padding-left: 14px; position: relative; color: var(--ink-2); }
+.chainbox ul.steps li::before { content: ""; position: absolute; left: 0; top: .68em; width: 6px; height: 6px; border-radius: 50%; background: var(--axis); }
+
+footer { max-width: 960px; margin: 0 auto; padding: 0 28px 48px; font-size: 13px; color: var(--muted); }
+footer .in { border-top: 1px solid var(--rule); padding-top: 24px; }
+footer p + p { margin-top: 6px; }
+
+@media (max-width: 860px) {
+  section { grid-template-columns: minmax(0, 1fr); } section > *, section > h2 { grid-column: 1; }
+  section > h2 { grid-template-columns: 1fr; } section > h2::before { margin-bottom: 4px; }
+  .hero-grid, .two, .stats, .cards, .mult, .frame { grid-template-columns: 1fr; }
+  .rqs { grid-template-columns: 1fr 1fr; }
+  .bayes { grid-template-columns: 1fr; } .bayes .op { display: none; }
+  .hero h1 { font-size: 36px; }
+  nav.top a.l, .brand small { display: none; }
+  .gantt .chartwrap { overflow-x: auto; }
+  .gantt svg { min-width: 620px; }
+}
+@media (max-width: 520px) { .rqs { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<nav class="top"><div class="in">
+  <a class="brand" href="#top"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><rect x="1.5" y="1.5" width="19" height="19" rx="5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 8h10M6 11.5h6M6 15h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".45"/><path d="M6 11.5h6" stroke="var(--back-ink)" stroke-width="2" stroke-linecap="round"/></svg>Weigh what you write <small>proposal v2</small></a>
+  <a class="l" href="#motivation">Motivation</a>
+  <a class="l" href="#questions">Questions</a>
+  <a class="l" href="#design">Design</a>
+  <a class="l" href="#pilot">Pilot</a>
+  <a class="l" href="#plan">Plan</a>
+  <button id="theme" aria-label="Toggle dark theme">◐</button>
+</div></nav>
+
+<main id="main">
+<header class="hero" id="top">
+  <div class="hero-grid">
+    <div>
+      <p class="meta">Research proposal · v2 · October 29, 2026</p>
+      <h1>Do reasoning models weigh what they <em>write</em>?</h1>
+      <p class="kick">If a model never writes down what it knows, does that knowledge still count?</p>
+      <p class="sub">A model may know that Lyme disease is common in Connecticut in July, yet a case that says only “July, Connecticut” never states that prior. We ask whether such unstated knowledge still moves the answer as the model thinks longer, and whether it first has to be written into the trace. We measure its weight against the Bayesian value of 1, look for where the behavior comes from in RL training, and train the weight toward 1.</p>
+    </div>
+    <figure class="herofig">
+      <svg viewBox="0 0 400 300" role="img" aria-label="Three routes to the answer: the model's own prior acts through a sentence in the trace or silently; the symptoms act through the trace. Prefill and suppression fix whether the trace states the prior.">
+        <defs>
+          <marker id="ah-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah-w"/></marker>
+          <marker id="ah-q" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah-q"/></marker>
+          <marker id="ah-e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ah-e"/></marker>
+        </defs>
+        <rect class="dg-band" x="28" y="88" width="360" height="130" rx="12"/>
+        <text class="dg-l" x="208" y="106" text-anchor="middle">TRACE · BUDGET b</text>
+        <rect class="dg-box" x="40" y="20" width="150" height="48" rx="9"/>
+        <text class="dg-t" x="115" y="40" text-anchor="middle">Own prior x̂</text>
+        <text class="dg-s" x="115" y="57" text-anchor="middle">moved by a context cue</text>
+        <rect class="dg-box" x="226" y="20" width="150" height="48" rx="9"/>
+        <text class="dg-t" x="301" y="40" text-anchor="middle">Symptoms</text>
+        <text class="dg-s" x="301" y="57" text-anchor="middle">stated in the case</text>
+        <rect class="dg-box hot" x="40" y="116" width="150" height="46" rx="9"/>
+        <text class="dg-t" x="115" y="135" text-anchor="middle">States the prior</text>
+        <text class="dg-s" x="115" y="152" text-anchor="middle">mediator M</text>
+        <rect class="dg-box" x="226" y="116" width="150" height="46" rx="9"/>
+        <text class="dg-t" x="301" y="135" text-anchor="middle">Restates symptoms</text>
+        <text class="dg-s" x="301" y="152" text-anchor="middle">may count twice</text>
+        <rect class="dg-box" x="96" y="240" width="224" height="48" rx="9"/>
+        <text class="dg-t" x="208" y="260" text-anchor="middle">Answer</text>
+        <text class="dg-s" x="208" y="277" text-anchor="middle">log-odds of A over B</text>
+        <text class="dg-i" x="124" y="188">prefill → M = 1</text>
+        <text class="dg-i" x="124" y="204">suppress → M = 0</text>
+        <text class="dg-i" x="310" y="188">repeat ×k</text>
+        <path class="dg-w" d="M115 68V113" marker-end="url(#ah-w)"/>
+        <path class="dg-w" d="M115 162V237" marker-end="url(#ah-w)"/>
+        <path class="dg-e" d="M301 68V113" marker-end="url(#ah-e)"/>
+        <path class="dg-e" d="M301 162V237" marker-end="url(#ah-e)"/>
+        <path class="dg-q" d="M40 44H16V264H93" marker-end="url(#ah-q)"/>
+        <text class="dg-r" x="124" y="232">written</text>
+        <text class="dg-r" x="310" y="232">evidence</text>
+        <text class="dg-r" x="22" y="256">silent</text>
+      </svg>
+      <figcaption>Three routes to the answer. Prefill and on-policy suppression fix whether the trace states the prior (M = 1 or 0), which separates the written route from the silent, unstated one. The thinking budget sets how long the trace runs.</figcaption>
+    </figure>
+  </div>
+  <ol class="rqs">
+    <li><span class="q">RQ1</span><b>How much does it count?</b>The weight on the model’s own unstated prior, against Bayes’ 1, across thinking budgets.</li>
+    <li><span class="q">RQ2</span><b>Only once written?</b>Fix whether the trace states the prior, at 1 or 0, and see how much effect is left.</li>
+    <li><span class="q">RQ3</span><b>More if written more?</b>Repeat a sentence k times, early or late in the trace.</li>
+    <li><span class="q">RQ4</span><b>Where does it come from?</b>The same measures across OLMo-3’s SFT, DPO and RLVR checkpoints.</li>
+    <li><span class="q">RQ5</span><b>Can RL fix it?</b>Reward the normative posterior at several reasoning lengths; test on held-out disease pairs.</li>
+  </ol>
+  <div class="links">
+    <a data-repo-path="" href="#">Code &amp; data</a>
+    <a data-repo-path="/blob/main/pilot/step1_design.md" href="#">Pilot design</a>
+    <a data-repo-path="/blob/main/docs/proposal_v2.md" href="#">Full proposal (Chinese)</a>
+    <span class="tgt">target · ICML 2027</span>
+  </div>
+</header>
+
+<!-- ============ the test ============ -->
+<section id="test">
+  <h2>One case, two contexts</h2>
+  <p class="lede">Each item is a choice between two diagnoses. The symptoms stay fixed. Only a context cue changes: a place, a season, an age, never a rate or a prevalence. The cue moves the model’s own prior, and Bayes’ rule says how far the answer should move.</p>
+  <figure>
+    <div class="cards">
+      <div class="vcard"><div class="lbl">context 1</div>
+        <p>A 34-year-old woman <mark>in Connecticut in July</mark> has had fever, fatigue and muscle aches for four days. The diagnosis is either (A) Lyme disease or (B) a viral syndrome. What is P(A)?</p>
+        <div class="vfoot">Lyme is common here, so the prior for A is <b>high</b></div></div>
+      <div class="vcard"><div class="lbl">context 2</div>
+        <p>A 34-year-old woman <mark>in Arizona in January</mark> has had fever, fatigue and muscle aches for four days. The diagnosis is either (A) Lyme disease or (B) a viral syndrome. What is P(A)?</p>
+        <div class="vfoot">Lyme is rare here, so the prior for A is <b>low</b></div></div>
+    </div>
+    <div class="bayes">
+      <div class="term"><div class="tv">log-odds of A</div><div class="tk">what we read from the answer</div></div>
+      <div class="op">=</div>
+      <div class="term hot"><div class="tv">prior log-odds</div><div class="tk">moved by the cue</div></div>
+      <div class="op">+</div>
+      <div class="term"><div class="tv">evidence log-LR</div><div class="tk">the same in both cards</div></div>
+      <p class="after">Across contexts, the answer’s log-odds should move one-for-one with the model’s own prior: a slope of 1. Below 1 the prior is under-used; above 1, over-used.</p>
+    </div>
+    <figcaption><b>Figure 1.</b> The two items differ only in the highlighted cue. We ask the model for its prior in each context in a separate chat, so the slope is measured against the model’s own knowledge, not a textbook prevalence. This pair is an illustration; the pilot uses pairs from DDXPlus (Table 3).</figcaption>
+  </figure>
+
+  <h3>Four answers, four fingerprints</h3>
+  <p>We fix four hypotheses before the first run. They predict different patterns on the same three curves, and they can hold in part at once, so we report graded results rather than a winner.</p>
+  <figure>
+    <div class="chart-card" id="f2">
+      <button class="viewtable" data-for="f2">table</button>
+      <div class="ct">Predicted ρ as thinking grows</div>
+      <div class="cs">Schematic, not data. ρ = weight on the prior ÷ weight on the symptoms; Bayes gives 1.</div>
+      <div class="legend">
+        <span><i class="lk s1"></i>as generated</span>
+        <span><i class="lk s2"></i>prior written in (prefill)</span>
+        <span><i class="lk s3"></i>prior suppressed (on-policy)</span>
+        <span><i class="lk ref"></i>Bayes</span>
+      </div>
+      <div class="mult chartwrap"></div>
+      <div class="tablewrap hidden">
+        <table class="dt">
+          <tr><th>Hypothesis</th><th>Prior weight β<sub>impl</sub></th><th>Symptom weight β<sub>evid</sub></th><th>ρ, as plotted</th><th>Prefill the model’s own prior</th><th>On-policy suppression</th></tr>
+          <tr><td>H_gate: an unwritten prior fades</td><td>falls</td><td>flat</td><td>falls</td><td>restores most of the weight at high budget</td><td>prior effect near 0 at high budget</td></tr>
+          <tr><td>H_recruit: longer traces write the prior, and use it</td><td>rises, in step with how often traces state it</td><td>flat</td><td>rises</td><td>largest effect at low budget</td><td>cancels the rise</td></tr>
+          <tr><td>H_amplify: restated symptoms are counted twice</td><td>flat</td><td>rises</td><td>falls</td><td>helps, but ρ still falls</td><td>small effect</td></tr>
+          <tr><td>H_silent: the prior is used without being written</td><td>flat</td><td>flat</td><td>flat</td><td>near 0</td><td>near 0</td></tr>
+        </table>
+      </div>
+    </div>
+    <figcaption><b>Figure 2.</b> With no thinking there is no trace to edit, so the three lines start together. Under H_gate, writing the prior in restores its weight and suppressing it removes it. Under H_recruit, the natural rise disappears once mentions are suppressed. Under H_amplify, the ratio falls because the symptom weight grows, so prefill helps only in part. Under H_silent neither intervention matters; this is the weakest outcome for us, because <a href="https://arxiv.org/abs/2610.18105">Bürger et al. (2026)</a> already show silent use of information given in the prompt.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ motivation ============ -->
+<section id="motivation">
+  <h2>Motivation</h2>
+  <p class="lede">Reasoning erases unstated knowledge in some studies and strengthens it in others. Nobody has separated the two routes on a task with a right answer.</p>
+  <div class="two">
+    <div class="box"><div class="lbl">known</div><ul>
+      <li>Longer reasoning can erase what the prompt leaves unstated. An unstated but sensible prior loses weight as the budget grows <span class="cite">(Gema et al., TMLR 2025; Qwen3-32B goes the other way)</span>; thinking cancels default pragmatic readings <span class="cite">(Kou et al. 2026)</span>; long reasoning before search uses retrieved evidence worse <span class="cite">(KID, 2026)</span>.</li>
+      <li>Reasoning can also strengthen parametric knowledge. Recall gains come mostly from facts written into the trace <span class="cite">(Thinking to Recall, COLM 2026)</span>, and reasoning models lean less on context and more on memory <span class="cite">(Lost-in-the-Later, 2025)</span>.</li>
+      <li>Information can act without being written: attributes in the prompt change diagnoses while the chain of thought never mentions them <span class="cite">(Bürger et al. 2026)</span>.</li>
+    </ul></div>
+    <div class="box b"><div class="lbl">missing</div><ul>
+      <li>For knowledge that lives only in the weights, no one has separated the written route from the silent one.</li>
+      <li>No one has scored that knowledge’s weight against the Bayesian value as the thinking budget grows.</li>
+      <li>“Longer reasoning ignores base rates” has no direct evidence. Gema et al. use a non-medical regression, DiagRare’s budget runs are confounded by truncation, and <a href="https://arxiv.org/abs/2507.00310">AutoDiscovery</a> varies the amount of evidence, not the length of reasoning.</li>
+    </ul></div>
+  </div>
+  <p>One hypothesis could explain both directions: <b>reasoning models weigh what they write.</b> If diagnostic traces spend most of their length restating symptoms, an unwritten prior would be crowded out; recall traces write the facts out, so memory gains. In Gema et al.’s appendix example the prior is written once while a spurious feature is discussed again and again, and the prior loses.</p>
+  <p>Diagnosis is a clean test bed. Bayes gives the right weight. Pre-test probability really does change with setting and region, so a cue can move the prior inside one case. Traces list the symptoms one by one; how often they also state prevalence is one of the first things the pilot measures. It is also a live problem: without a prevalence cue, GPT-4o over-diagnoses rare emergencies <span class="g">(Safranek et al. 2026)</span>, and whether LLMs name the right diagnosis tracks how much literature a disease has, not how common it is <span class="g">(Ríos-Hoyo 2024)</span>. Whether longer reasoning makes this better or worse has not been measured.</p>
+  <figure class="wide">
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:21%"></th><th>DiagRare-Bench</th><th>Bürger et al. 2026</th><th>Gema et al. 2025</th><th>Thinking to Recall</th><th>Sun et al. 2026</th><th class="us">This work</th></tr>
+      <tr><td>Prior lives only in the weights</td><td class="no">partly; never elicited</td><td class="no">no; prompt attributes</td><td class="no">partly; an unstated feature</td><td class="y">yes, but facts, not priors</td><td class="no">no; inferred from examples</td><td class="y us">yes; moved within a case</td></tr>
+      <tr><td>Weight scored against Bayes</td><td class="no">no; relative across models</td><td class="no">no</td><td class="no">no; correlation, RMSE</td><td class="no">no; accuracy</td><td class="y">yes; posterior error</td><td class="y us">yes; slope against 1</td></tr>
+      <tr><td>Written and silent routes separated causally</td><td class="no">no; traces not read</td><td class="no">partly; direct vs. through the CoT, on Thyroid</td><td class="no">no</td><td class="no">no; filler-trace control</td><td class="no">no</td><td class="y us">yes; on the trace</td></tr>
+      <tr><td>Thinking-budget curve</td><td class="y">yes; hard caps, many overflow</td><td class="no">no</td><td class="y">yes</td><td class="no">no; reasoning on or off</td><td class="no">no</td><td class="y us">yes; three protocols</td></tr>
+      <tr><td>Training origin or a fix</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="y">fix; GRPO toward the posterior</td><td class="y us">origin and fix</td></tr>
+    </table></div>
+    <figcaption><b>Table 2.</b> Closest work as of October 26, 2026. <a href="https://github.com/rdharini2001/DiagRare">DiagRare-Bench</a> (ICLR 2027 submission) fits prior and evidence coefficients with a Plackett-Luce model, crosses stated prevalence with evidence strength on 27 disease pairs, and sweeps Qwen3-8B’s thinking budget with hard caps. <a href="https://arxiv.org/abs/2610.18105">Bürger et al.</a> split a prompt attribute’s effect into a direct part and a part through the chain of thought (on Thyroid), and find that the chain of thought rarely mentions the attribute. <a href="https://arxiv.org/abs/2507.14417">Gema et al.</a> see an unstated prior lose weight with budget in Claude and o3-mini. <a href="https://arxiv.org/abs/2603.09906">Thinking to Recall</a> traces recall gains to facts written in the trace. <a href="https://arxiv.org/abs/2609.38005">Sun et al.</a> train Qwen3-8B with a reward on the true posterior, inferring base rates from labeled examples in the prompt. The regression itself is Grether (1980), already used on LLMs by <a href="https://arxiv.org/abs/2402.18225">CogBench</a>; we do not claim it.</figcaption>
+  </figure>
+  <p>Our earlier study, <i>How Faithfully do Language Models Acquire Probabilistic Knowledge?</i>, built a pipeline from Bayes nets to text to continual pretraining, which none of the closest competitors above has. It can implant a known prior into a model, which would give the repair an exact ground truth (stretch experiment S1).</p>
+</section>
+
+<!-- ============ questions ============ -->
+<section id="questions">
+  <h2>Goal and questions</h2>
+  <p class="lede">The goal is a rule for how reasoning models use what they know, and a method that fixes the misuse. Diagnosis, DDXPlus, prefill and suppression are tools, not the goal.</p>
+  <figure class="wide">
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:62px"></th><th style="width:27%">Question</th><th>How we read it</th><th style="width:26%">We drop the claim if</th></tr>
+      <tr><td><span class="pill">RQ1</span></td><td><b>How much does the unstated prior count, and how does that change with thinking?</b></td><td class="g">β<sub>impl</sub> against 1, and ρ = β<sub>impl</sub> / β<sub>evid</sub> at each budget. ρ is the main measure because longer thinking makes answers more extreme, which inflates both slopes.</td><td class="g">ρ is flat across budgets (equivalence test, ±0.1) and near 1 in every model</td></tr>
+      <tr><td><span class="pill">RQ2</span></td><td><b>Does it count only once written?</b></td><td class="g">The prior’s slope with the mention held at 1 (prefill) and at 0 (suppression): the controlled direct effects CDE<sub>1</sub> and CDE<sub>0</sub>. Share through writing = 1 − CDE<sub>0</sub> / total effect, by budget.</td><td class="g">suppression leaves the effect intact and prefill does not move the answers</td></tr>
+      <tr><td><span class="pill">RQ3</span></td><td><b>Does writing it more count more?</b></td><td class="g">Change in log-odds per extra restatement, k ∈ {0, 1, 2, 4}, of a symptom or of the prior, inserted early or late.</td><td class="g">log-odds do not change with k</td></tr>
+      <tr><td><span class="pill">RQ4</span></td><td><b>Where does it come from?</b></td><td class="g">The same measures across OLMo-3-7B-Think’s SFT, DPO and about 10 RLVR checkpoints; RL-Zero-Math against RL-Zero-General and RL-Zero-IF.</td><td class="g">the measures are flat across training stages</td></tr>
+      <tr><td><span class="pill">RQ5</span></td><td><b>Can RL train the right weight?</b></td><td class="g">On held-out disease pairs, ρ within 1 ± 0.1 and flat across budgets, with β<sub>evid</sub> not falling and no loss on general benchmarks.</td><td class="g">gains appear only on trained pairs, or come from a lower β<sub>evid</sub></td></tr>
+    </table></div>
+    <figcaption>β<sub>impl</sub> and β<sub>evid</sub> are the slopes of the answer’s log-odds on the model’s own prior and on the symptom evidence. Bayes gives 1 for each, and ρ is their ratio (§04).</figcaption>
+  </figure>
+</section>
+
+<!-- ============ design ============ -->
+<section id="design">
+  <h2>Experiment design</h2>
+  <p class="lede">In each trial the symptoms are fixed, a context cue moves the prior, we intervene on whether the trace states that prior, and we read the log-odds of the answer. The diagnosis part needs inference only; the origin part uses public checkpoints; the repair is RL.</p>
+  <div class="box"><div class="lbl">terms used below</div><ul class="steps">
+    <li><b>Own prior x̂.</b> The model’s prior for A over B in one context, asked in a separate chat: as a stated share (x̂<sub>decl</sub>, two wordings, 10 draws each), and as its answer to the same case with the symptoms removed (x̂<sub>beh</sub>).</li>
+    <li><b>Evidence ℓ.</b> The log-likelihood ratio of a symptom set, from DDXPlus counts.</li>
+    <li><b>β<sub>impl</sub>, β<sub>evid</sub>, ρ.</b> Slopes of the answer’s log-odds on x̂ and on ℓ within a disease pair; Bayes gives 1 for each. ρ = β<sub>impl</sub> / β<sub>evid</sub> is the main measure.</li>
+    <li><b>Mention M.</b> Whether the trace states the prior, judged by a regex plus an LLM judge and checked against human labels. “Silent” means unstated: the cue’s effect may still travel through other content in the trace (a question about tick bites, say), so how broadly to count a mention is a choice we still have to fix.</li>
+    <li><b>Budget b.</b> The length of one reasoning trace. We study sequential thinking only and give the model no tools: search would look the prevalence up, and Python would force the prior into a number.</li>
+  </ul></div>
+
+  <h3>The estimate</h3>
+  <div class="eq"><i>y</i><sub>pcs</sub>(<i>b</i>) = β<sub>impl</sub>(<i>b</i>) · <i>x̂</i><sub>pc</sub> + β<sub>evid</sub>(<i>b</i>) · <i>ℓ</i><sub>s</sub> + α<sub>p</sub> + ε<sub>pcs</sub><span class="sep"></span>ρ(<i>b</i>) = β<sub>impl</sub>(<i>b</i>) / β<sub>evid</sub>(<i>b</i>)</div>
+  <p style="margin-top:14px">Here y is the log-odds of A in the answer, x̂ the model’s own prior log-odds, p the disease pair, c the context, s the symptom set, and α<sub>p</sub> a pair fixed effect. The symptoms are the same across contexts, so estimating β<sub>impl</sub> needs no likelihoods at all. Noise in x̂ is corrected with ORIV <span class="g">(Gillen, Snowberg &amp; Yariv 2019)</span>: the draws are split into halves and each half instruments the other. With only 8 pairs in the pilot, intervals come from a wild cluster bootstrap over pairs.</p>
+  <p>A slope of 1 rests on assumptions we keep in view. The cue should move the prior but not how likely the symptoms are; age cues may break this, because DDXPlus samples symptoms by age and sex, and we have not checked it yet. ℓ comes from DDXPlus rather than from the model, so we read the change in ρ with budget before its distance from 1. And x̂ is elicited without thinking; step 1 elicits it once more at natural length to check for drift.</p>
+
+  <h3>Items</h3>
+  <figure>
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:44px"></th><th style="width:27%">A vs B</th><th>Three contexts, prior for B rising →</th><th style="width:13%">Cue</th><th style="width:13%">Rarer is worse</th></tr>
+      <tr><td class="n">P1</td><td>URTI vs influenza</td><td class="g">Minnesota in July · October · late January</td><td class="g">season</td><td class="no">no</td></tr>
+      <tr><td class="n">P2</td><td>Pneumonia vs tuberculosis</td><td class="g">accountant born in Ohio · moved from Mexico 3 months ago · from the Philippines 3 months ago</td><td class="g">origin</td><td>yes</td></tr>
+      <tr><td class="n">P3</td><td>GERD vs possible NSTEMI/STEMI</td><td class="g">man aged 28 · 48 · 68</td><td class="g">age</td><td>yes</td></tr>
+      <tr><td class="n">P4</td><td>PSVT vs atrial fibrillation</td><td class="g">woman aged 25 · 50 · 80</td><td class="g">age</td><td class="no">no</td></tr>
+      <tr><td class="n">P5</td><td>Bronchiolitis vs croup</td><td class="g">3 months · 14 months · 3 years old</td><td class="g">age</td><td class="no">no</td></tr>
+      <tr><td class="n">P6</td><td>Panic attack vs pulmonary embolism</td><td class="g">office worker · off a 14-hour flight yesterday · day 4 after hip replacement</td><td class="g">recent event</td><td>yes</td></tr>
+      <tr><td class="n">P7</td><td>Acute rhinosinusitis vs allergic sinusitis</td><td class="g">Atlanta in January · July · early April</td><td class="g">season</td><td class="no">no</td></tr>
+      <tr><td class="n">P8</td><td>Pneumonia vs pulmonary neoplasm</td><td class="g">man aged 25 · 50 · 75</td><td class="g">age</td><td>yes</td></tr>
+    </table></div>
+    <figcaption><b>Table 3.</b> Candidate pairs for the first pilot, fixed before seeing any model output. Names come from <a href="https://github.com/mila-iqia/ddxplus">DDXPlus</a>, a synthetic differential-diagnosis dataset whose patient records give the symptom likelihoods. Cues contain no rates or prevalences and no words such as common or rare; adjacent contexts should differ by at least 1 logit in prior odds. Each pair gets four symptom sets with log-likelihood ratios near −2.5, −0.7, +0.7 and +2.5: 8 × 3 × 4 = 96 items, plus a version that states the prior, as a positive control.</figcaption>
+  </figure>
+
+  <h3>Intervening on the trace</h3>
+  <div class="chainbox"><div class="lbl">same item, same budget, three arms</div>
+    <div class="chain">
+      <span class="chip b">prefill the model’s own prior sentence → M = 1</span>
+      <span class="chip">prefill a neutral sentence of equal length (control)</span>
+      <span class="chip k">suppress on-policy: resample any sentence that states the prior → M = 0</span>
+    </div>
+    <ul class="steps">
+      <li>The prefilled sentence is the model’s own words, generated in another chat.</li>
+      <li>Suppression resamples one sentence at a time, as in <a href="https://arxiv.org/abs/2510.27484">Thought Branches</a>, because hand-edited traces give near-zero, unstable effects. We report how often the suppressed content comes back.</li>
+      <li>Estimands: the controlled direct effects CDE<sub>1</sub>(b) and CDE<sub>0</sub>(b), the prior’s slope with the mention held at 1 or 0, and the share that flows through writing, in the chain-of-thought mediation framework of <a href="https://arxiv.org/abs/2512.23032">Zaman &amp; Srivastava (ACL 2026)</a>.</li>
+      <li>Writing the prior into the prompt, the main contrast in v1, is now only a secondary control. In <a href="https://arxiv.org/abs/2605.08556">Yamin et al. (2026)</a>, writing a model’s own stated probability (a posterior) back into its prompt changed its decisions.</li>
+    </ul>
+  </div>
+  <div class="two">
+    <div class="box"><div class="lbl">dose and position</div><ul>
+      <li>Insert k ∈ {0, 1, 2, 4} restatements that add no information (a symptom, or the prior, in the model’s words), early or late in the trace.</li>
+      <li>If log-odds track k, the rule sharpens to <i>count, not weigh</i>. Position tests early commitment.</li>
+    </ul></div>
+    <div class="box"><div class="lbl">task framing</div><ul>
+      <li>One arm adds “use your general knowledge, including how common each disease is”.</li>
+      <li>It separates <i>cannot</i> use the prior from <i>will not</i>, as when a model treats the case as a closed world.</li>
+    </ul></div>
+  </div>
+  <div class="two">
+    <div class="box"><div class="lbl">three budget protocols</div><ul>
+      <li><b>Interrupted:</b> Qwen3 thinks up to N tokens (512 or 2,048), then gets the official wrap-up line and answers. These levels fill in the curve; the change Δρ is defined on the uninterrupted levels.</li>
+      <li><b>Planned:</b> the model knows its budget (gpt-oss low, medium, high effort).</li>
+      <li><b>Extended:</b> when Qwen3 tries to stop, the trace forks; one branch answers, the other gets “Wait” and thinks on, as in <a href="https://arxiv.org/abs/2501.19393">s1</a>. One trace yields paired answers at three lengths.</li>
+      <li>Every level reports overflow, real token counts and parse rates.</li>
+    </ul></div>
+    <div class="box"><div class="lbl">origin (RQ4)</div><ul>
+      <li><a href="https://huggingface.co/allenai/Olmo-3-7B-Think">OLMo-3-7B-Think</a> publishes SFT and DPO models and 55 RLVR checkpoints (steps 25 to 1375), plus RL-Zero runs from the base model on math, code, IF, general and mixed data.</li>
+      <li>Inference only. The prediction is two-sided: RL on closed-world math may teach “use only what is written”, but RL is also reported to improve recall of parametric facts.</li>
+    </ul></div>
+  </div>
+
+  <h3>The repair (RQ5)</h3>
+  <div class="box b"><div class="lbl">RL toward the normative posterior</div><ul class="dots">
+    <li><b>Target.</b> Real disease pairs with context cues. Prior from epidemiology, likelihood from DDXPlus, posterior by Bayes. On real pairs this rewards accurate knowledge as well as correct use, and training may move x̂ itself. Stretch: an implanted world of fictional diseases, where the posterior is exact and only use is tested.</li>
+    <li><b>Reward.</b> A proper scoring rule (Brier or log score) against the target posterior, scored at several cut points of the same trace and at its end, so the weight holds at every length.</li>
+    <li><b>Arms.</b> Final-answer reward only (does RL learn to write the prior, or to use it silently?); the same plus a process reward for stating the prior; plain right-or-wrong RLVR.</li>
+    <li><b>Guard.</b> Track β<sub>evid</sub>. Buying prior weight by ignoring the symptoms is a reward hack, and the posterior target penalizes it.</li>
+    <li><b>Setup.</b> GRPO with LoRA on Qwen3-4B, then 8B, with math RLVR data mixed in.</li>
+    <li><b>Test.</b> Held-out pairs, real cases and one non-medical base-rate domain, with no loss on math and general benchmarks.</li>
+  </ul>
+  <p class="small">Closest methods: <a href="https://arxiv.org/abs/2609.38005">Sun et al. (2026)</a> reward the true posterior, but base rates come from examples in the prompt; <a href="https://arxiv.org/abs/2608.18581">VAKE (2026)</a> trains a model to write knowledge out and then to use it unwritten, for factual QA; <a href="https://arxiv.org/abs/2507.16806">RLCR (2025)</a> calibrates confidence, not the use of a prior. Two searches found nothing that combines a prior held only in the weights, a posterior reward, robustness to reasoning length and a check on whether the prior is written.</p>
+  </div>
+
+  <h3>Experiments</h3>
+  <figure>
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:42px"></th><th>What</th><th style="width:30%">Models</th><th style="width:10%">Answers</th></tr>
+      <tr><td class="n">E0</td><td>Measurement checks: stated prior at 3–5 levels (positive control); test–retest of x̂; the cue moves x̂ by at least 1 logit; the answer is P(disease | symptoms), not the reverse; sample size by parameter recovery</td><td class="g">Qwen3-8B, gpt-oss-20b</td><td class="g">can we measure it</td></tr>
+      <tr><td class="n">E1</td><td>Main curve: budget × how the prior appears (omitted; the model’s own elicited prior written into the prompt; a stated prevalence as positive control) × evidence strength; task-framing arm</td><td class="g">open models from three base families so far (Qwen3-8B/32B, gpt-oss-20b, OLMo-3-7B-Think, and DeepSeek-R1-0528-Qwen3-8B, a Qwen3 distill; a fourth family is still to pick), plus 2–3 API models</td><td><span class="pill">RQ1</span></td></tr>
+      <tr><td class="n">E2</td><td>Mediation: own-prior prefill, neutral prefill and on-policy suppression × budget; how answers change around the trace’s first mention of prevalence</td><td class="g">open models</td><td><span class="pill">RQ2</span></td></tr>
+      <tr><td class="n">E3</td><td>Dose and position: k restatements of a symptom or of the prior × early or late</td><td class="g">open models</td><td><span class="pill">RQ3</span></td></tr>
+      <tr><td class="n">E4</td><td>Origin: OLMo-3-7B-Think from SFT to DPO and about 10 RLVR steps; RL-Zero-Math against General and IF</td><td class="g">OLMo-3</td><td><span class="pill">RQ4</span></td></tr>
+      <tr><td class="n">E5</td><td>Repair: GRPO with the three reward arms, scored with the E1–E3 measures</td><td class="g">Qwen3-4B with LoRA, then 8B</td><td><span class="pill">RQ5</span></td></tr>
+      <tr><td class="n">E6</td><td>Transfer: held-out pairs, real cases, a non-medical base-rate domain; the E5 models against prompt fixes such as “state the prior first”</td><td class="g">part of E1, plus the E5 models</td><td class="g">does it carry over</td></tr>
+      <tr><td class="n">S1</td><td><i>Stretch.</i> Implant true priors for fictional diseases with our earlier pipeline (copied, not modified)</td><td class="g">Qwen3-8B</td><td class="g">ground truth</td></tr>
+      <tr><td class="n">S2</td><td><i>Stretch.</i> Attention knockout from the answer to the cue: does the prior’s effect vanish only when the trace never mentions it?</td><td class="g">Qwen3-8B</td><td class="g">mechanism</td></tr>
+    </table></div>
+    <figcaption><b>Table 4.</b> E0–E3 need inference only. API models only check the budget curve, since many APIs ignore assistant prefill and do not return editable traces. We propose moving S1 to NeurIPS 2027.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ pilot ============ -->
+<section id="pilot">
+  <h2>First pilot and stopping rules</h2>
+  <p class="lede">No model has been run yet. The pilot has three steps, and each can end a line of the project. Step 1 only asks whether the effect is there, on two open models, for a few A100-hours.</p>
+  <div class="chainbox"><div class="lbl">three steps, each with a stop</div>
+    <div class="chain">
+      <span class="chip"><i>1</i>is it there? (RQ1)</span>
+      <span class="nw"><span class="arrow">→</span><span class="chip dark">go / no-go · Nov 6</span></span>
+      <span class="nw"><span class="arrow">→</span><span class="chip"><i>2</i>does writing matter? (RQ2)</span></span>
+      <span class="nw"><span class="arrow">→</span><span class="chip"><i>3</i>repair pilot (RQ5)</span></span>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v">96</div><div class="k">items: 8 pairs × 3 contexts × 4 symptom sets, plus 96 with the prior stated</div></div>
+    <div class="stat"><div class="v">2<small> models</small> · 9<small> levels</small></div><div class="k">Qwen3-8B at six thinking levels, gpt-oss-20b at three</div></div>
+    <div class="stat"><div class="v">≤ 10<small> A100-h</small></div><div class="k">proposed cap for step 1; no paid APIs</div></div>
+  </div>
+  <figure>
+    <table class="t">
+      <tr><td class="n" style="width:20%">Items</td><td>96 vignettes. The positive control states the prior (1 in 11, 1 in 2, 10 in 11) in a neutral context: another 96.</td></tr>
+      <tr><td class="n">Qwen3-8B</td><td>No thinking; 512 and 2,048 tokens, interrupted; natural length (up to 8,192); natural length plus one or two “Wait” continuations, forked from the same trace.</td></tr>
+      <tr><td class="n">gpt-oss-20b</td><td>Low, medium and high reasoning effort.</td></tr>
+      <tr><td class="n">Own prior</td><td>x̂<sub>decl</sub>: two wordings, 10 draws each, in fresh chats. x̂<sub>beh</sub>: the same case with the symptoms replaced by “a new health complaint”.</td></tr>
+      <tr><td class="n">Answer</td><td>A final line “P(A) = …”, turned into log-odds after clipping to [0.01, 0.99]. Unparseable answers are counted, not imputed.</td></tr>
+      <tr><td class="n">Also recorded</td><td>How often the trace states the prior (regex, with 50 traces checked by hand), thinking tokens, how often the wrap-up line was needed, and parse rates.</td></tr>
+      <tr><td class="n">Scale</td><td>5 samples per cell: about 4.8k generations for Qwen3-8B and 3.8k for gpt-oss-20b, 10–15M tokens plus 2–4M for the continuations; vLLM on the Duke CS cluster.</td></tr>
+      <tr><td class="n">Before the run</td><td>Prompts frozen with a SHA-256 hash. A parameter-recovery simulation checks that the design resolves a change in ρ of 0.1; if not, we add symptom sets or samples first.</td></tr>
+    </table>
+    <figcaption><b>Table 5.</b> Step 1 as designed. Step 2 adds the own-prior prefill, a neutral prefill, the task-framing arm and, at high budget, on-policy suppression. The repair pilot trains Qwen3-4B with LoRA and GRPO on about 20 pairs (about 1k items) and tests on 8 held-out pairs.</figcaption>
+  </figure>
+  <figure>
+    <div class="chart-card" id="f3">
+      <button class="viewtable" data-for="f3">table</button>
+      <div class="ct">The plot step 1 will fill: weight on the unstated prior, ρ, by thinking budget</div>
+      <div class="cs">Empty until November 5. Hollow markers are our guesses, written before the run.</div>
+      <div class="legend">
+        <span><i class="lk gs"></i>pre-run guess</span>
+        <span><i class="lk ref"></i>Bayes</span>
+      </div>
+      <div class="frame chartwrap"></div>
+      <div class="tablewrap hidden">
+        <table class="dt">
+          <tr><th>Model</th><th>Budget</th><th>Protocol</th><th>Pre-run guess ρ</th><th>Result</th></tr>
+          <tr><td>Qwen3-8B</td><td>no thinking</td><td>none</td><td>0.4</td><td>pending</td></tr>
+          <tr><td>Qwen3-8B</td><td>512 tokens</td><td>interrupted</td><td>none</td><td>pending</td></tr>
+          <tr><td>Qwen3-8B</td><td>2,048 tokens</td><td>interrupted</td><td>none</td><td>pending</td></tr>
+          <tr><td>Qwen3-8B</td><td>natural length</td><td>natural</td><td>0.5</td><td>pending</td></tr>
+          <tr><td>Qwen3-8B</td><td>+1 “Wait”</td><td>extended</td><td>none</td><td>pending</td></tr>
+          <tr><td>Qwen3-8B</td><td>+2 “Wait”</td><td>extended</td><td>0.45 (0.05 below natural)</td><td>pending</td></tr>
+          <tr><td>gpt-oss-20b</td><td>low effort</td><td>planned</td><td>0.5</td><td>pending</td></tr>
+          <tr><td>gpt-oss-20b</td><td>medium effort</td><td>planned</td><td>none</td><td>pending</td></tr>
+          <tr><td>gpt-oss-20b</td><td>high effort</td><td>planned</td><td>0.4</td><td>pending</td></tr>
+        </table>
+      </div>
+    </div>
+    <figcaption><b>Figure 3.</b> The main pilot figure before any data. Our guesses have low confidence and do not enter the rules below: Qwen3-8B 0.4 without thinking and 0.5 at natural length; two continuations 0.05 lower, because extra thinking mostly rechecks the symptoms; gpt-oss-20b 0.5 at low effort and 0.4 at high. Each panel will also show the stated-prior control.</figcaption>
+  </figure>
+  <figure>
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:42%">If the pilot shows…</th><th style="width:22%">We conclude</th><th>Then</th></tr>
+      <tr><td>The cue moves x̂<sub>decl</sub> by less than 1 logit, or x̂ repeats poorly (r &lt; 0.7)</td><td><span class="pill">K0</span> measurement failed</td><td class="g">rebuild items and elicitation; read nothing else</td></tr>
+      <tr><td>The stated-prior control is near 0 at two or more budgets</td><td>the task does not work</td><td class="g">change the item format before reading the main condition</td></tr>
+      <tr><td>β<sub>impl</sub> near 0 at every budget</td><td><span class="pill">K1</span> the unstated prior is not used</td><td class="g">confirm with the framing arm in step 2; if still 0, end the writing line and lead with the repair, from about 0 to about 1</td></tr>
+      <tr><td>ρ falls by 0.1 or more with budget, and rare diseases gain probability in low-prior contexts</td><td>the prior is crowded out</td><td class="g">step 2 and the repair pilot</td></tr>
+      <tr><td>ρ moves by less than 0.1 either way (equivalence test) but stays off 1</td><td>no “think more, use the prior less”</td><td class="g">the motivation becomes “the weight is off 1 at every budget”; continue</td></tr>
+      <tr><td>ρ flat and near 1 in both models</td><td>the prior is used as Bayes asks</td><td class="g">drop RQ1’s claim; the repair has nothing to fix on these pairs, so we discuss before step 2</td></tr>
+      <tr><td>ρ rises by 0.1 or more</td><td>reasoning recruits the prior</td><td class="g">step 2 focuses on the written route</td></tr>
+      <tr><td>Qwen3-8B and gpt-oss-20b move in opposite directions</td><td>the budget types disagree</td><td class="g">read the extended contrast: if it sides with gpt-oss, the split is between whether to think and how much, reported separately; otherwise treat it as a model difference and add a third family early</td></tr>
+      <tr><td>Step 2: ρ flat and prefill near 0 at every budget</td><td><span class="pill">K2</span> writing does not matter</td><td class="g">end the writing line, keep H_silent as a result, lead with the repair</td></tr>
+      <tr><td>Repair pilot: gains only on trained pairs, or β<sub>evid</sub> falls</td><td>the repair failed or was gamed</td><td class="g">more pairs and contexts, the implanted world, or a new reward</td></tr>
+      <tr><td>Repair pilot: ρ moves toward 1 on held-out pairs and holds across budgets</td><td>the repair works</td><td class="g">scale to 8B; run E5 and E6</td></tr>
+      <tr><td>Intervals too wide to rule out 0 or 0.1, or an effect in one model only</td><td>undecided, or partial</td><td class="g">add items or samples; limit claims to that model and add a third family early</td></tr>
+    </table></div>
+    <figcaption><b>Table 6.</b> Stopping rules, fixed before the run; the smallest change in ρ we care about is 0.1. “Change with budget” is the top level minus the bottom: for Qwen3-8B, natural length minus no thinking (whether to think); for gpt-oss-20b, high minus low effort (how much to think). The extended contrast is two “Wait”s minus natural length on the same traces. A pair and context is left out of a slope at a budget level where more than 30% of its answers sit at the clipping bounds. We do not change the items after seeing results to rescue a claim.</figcaption>
+  </figure>
+</section>
+
+<!-- ============ plan ============ -->
+<section id="plan">
+  <h2>Timeline, risks and decisions</h2>
+  <p class="lede">About twelve weeks to an estimated ICML 2027 deadline (January 22–28; not yet announced). The last three weeks go to analysis and writing.</p>
+  <figure>
+    <div class="chart-card gantt" id="f4">
+      <button class="viewtable" data-for="f4">table</button>
+      <div class="ct">November 6 decides whether to continue; the repair must have results by January 7</div>
+      <div class="legend">
+        <span><i class="lk bar"></i>work</span>
+        <span><i class="lk dia"></i>decision or deadline</span>
+      </div>
+      <div class="chartwrap"></div>
+      <div class="tablewrap hidden"><table class="dt"></table></div>
+    </div>
+    <figcaption><b>Figure 4.</b> Plan as of October 29. November 6 can stop the project on K0 (fix the measurement first) or flag a provisional K1. K1 is confirmed, and K2 decided, when step 2 ends in late November; either one ends only the writing line, and the project then leads with the repair. We propose moving the implanted world (S1) to NeurIPS 2027, and we post to arXiv once the main result is stable.</figcaption>
+  </figure>
+
+  <h3>Main risks</h3>
+  <figure>
+    <div class="tscroll"><table class="t">
+      <tr><th style="width:38%">Risk</th><th style="width:20%">Cost</th><th>Response</th></tr>
+      <tr><td>Being scooped. The Yamin, Wilder and Horvitz group has about five 2026 papers in this setting; budgets are a natural next step for Bürger et al.; DiagRare may add trace analysis.</td><td class="g">novelty diluted</td><td class="g">post to arXiv as soon as the main result is stable; contrast with all three directly</td></tr>
+      <tr><td>The result is H_silent.</td><td class="g">reads as an increment on Bürger et al.</td><td class="g">graded outcomes fixed in advance; lead with the repair; with S1, implanted priors would give a lower bound on monitorability</td></tr>
+      <tr><td>x̂ is not the prior the model uses. GPT-4o states 2–4% but acts on 10–30% <span class="g">(<a href="https://arxiv.org/abs/2412.11009">Li &amp; Rui 2024</a>)</span>.</td><td class="g">β<sub>impl</sub> harder to read</td><td class="g">within-case design; x̂<sub>beh</sub> as a second prior; ORIV; claims stated relative to the model’s own stated prior</td></tr>
+      <tr><td>Truncation artifacts; APIs that ignore prefill.</td><td class="g">budget curves unreliable</td><td class="g">two budget types must point the same way; the extended contrast lengthens a trace only when the model tries to stop; trace interventions on open models only</td></tr>
+      <tr><td>Reward hacking in the repair.</td><td class="g">ρ improves while answers get worse</td><td class="g">track β<sub>evid</sub>; the posterior target penalizes ignoring symptoms</td></tr>
+      <tr><td>Too much for one deadline.</td><td class="g">both halves thin</td><td class="g">ICML gets the diagnosis plus the repair on real priors; the implanted version goes to NeurIPS 2027</td></tr>
+    </table></div>
+    <figcaption><b>Table 7.</b> The six risks that most affect the decision; the full list is in the full proposal (docs/proposal_v2.md in the code repo).</figcaption>
+  </figure>
+
+  <div class="callout"><div class="lbl">what we would like your input on</div>
+    <ol>
+      <li><b>Scope.</b> Diagnose, trace the origin, then repair, with “weigh what you write” as the main line. If the result is H_silent, we lead with the repair. ICML 2027 gets the diagnosis and the repair on real priors; the implanted-prior version waits for NeurIPS 2027. We recommend this split; if it is wrong, the repair may be thin by January.</li>
+      <li><b>Compute.</b> Proposed caps on the Duke CS cluster: step 1 at most 10 A100-hours, step 2 at most 20, the repair pilot at most 50. The project total and the API budget are still open.</li>
+    </ol>
+  </div>
+</section>
+</main>
+
+<footer><div class="in">
+  <p>Proposal v2, October 29, 2026. A working draft for discussion. No model has been run; every plot on this page is a schematic or an empty frame.</p>
+  <p>Some related-work descriptions come from summaries and are still being checked against the papers.</p>
+  <p>Follows our earlier study, <i>How Faithfully do Language Models Acquire Probabilistic Knowledge?</i> <a data-repo-path="" href="#">Code and data</a></p>
+</div></footer>
+
+<script>
+// Set this once the code-and-data repo exists, e.g. "https://github.com/OWNER/weigh-what-you-write".
+// Links that point into it stay hidden while it is empty.
+const CODE_REPO = "";
+
+(() => {
+  // theme
+  const root = document.documentElement;
+  const saved = localStorage.getItem("wwyw-theme");
+  if (saved) root.dataset.theme = saved;
+  document.getElementById("theme").addEventListener("click", () => {
+    const next = root.dataset.theme === "dark" ? "light" : "dark";
+    root.dataset.theme = next;
+    localStorage.setItem("wwyw-theme", next);
+  });
+
+  // repo links
+  document.querySelectorAll("[data-repo-path]").forEach(a => {
+    if (CODE_REPO) a.href = CODE_REPO.replace(/\/$/, "") + a.dataset.repoPath;
+    else a.classList.add("off");
+  });
+
+  // mark wide tables that scroll sideways, so narrow screens show a hint
+  const markScroll = () => document.querySelectorAll(".tscroll").forEach(el => el.classList.toggle("scrolls", el.scrollWidth > el.clientWidth + 2));
+  markScroll();
+  window.addEventListener("resize", markScroll);
+  window.addEventListener("load", markScroll);
+
+  // chart / table toggles
+  document.querySelectorAll(".viewtable").forEach(btn => btn.addEventListener("click", () => {
+    const card = document.getElementById(btn.dataset.for);
+    const table = card.querySelector(".tablewrap"), chart = card.querySelector(".chartwrap");
+    const showTable = table.classList.contains("hidden");
+    table.classList.toggle("hidden", !showTable);
+    chart.classList.toggle("hidden", showTable);
+    btn.textContent = showTable ? "chart" : "table";
+  }));
+
+  const NS = "http://www.w3.org/2000/svg";
+  const mk = (tag, attrs, parent) => {
+    const e = document.createElementNS(NS, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  const tx = (parent, x, y, s, cls, anchor) => {
+    const t = mk("text", { x, y, class: cls }, parent);
+    if (anchor) t.setAttribute("text-anchor", anchor);
+    t.textContent = s;
+    return t;
+  };
+  const r1 = v => Math.round(v * 10) / 10;
+  // Catmull-Rom through the points, as cubic Bezier segments
+  const smooth = p => {
+    let d = `M${r1(p[0][0])},${r1(p[0][1])}`;
+    for (let i = 0; i < p.length - 1; i++) {
+      const p0 = p[i - 1] || p[i], p1 = p[i], p2 = p[i + 1], p3 = p[i + 2] || p2;
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+      d += ` C${r1(c1[0])},${r1(c1[1])} ${r1(c2[0])},${r1(c2[1])} ${r1(p2[0])},${r1(p2[1])}`;
+    }
+    return d;
+  };
+
+  // Figure 2: schematic fingerprints. Values are shapes, not estimates.
+  const FP = [
+    { name: "H_gate", say: "an unwritten prior fades", note: "symptom weight flat", label: true,
+      aria: "the natural line falls; prefill keeps the weight; suppression drives it to zero",
+      lines: { nat: [.75, .6, .45, .3], pre: [.75, .78, .78, .76], sup: [.75, .42, .18, .05] } },
+    { name: "H_recruit", say: "longer traces write the prior, and use it", note: "symptom weight flat",
+      aria: "the natural line rises; prefill lifts it early; suppression keeps it flat",
+      lines: { nat: [.4, .55, .7, .82], pre: [.4, .82, .85, .86], sup: [.4, .41, .41, .4] } },
+    { name: "H_amplify", say: "restated symptoms are counted twice", note: "symptom weight rises",
+      aria: "all three lines fall; prefill stays a little higher",
+      lines: { nat: [.75, .62, .5, .4], pre: [.75, .7, .61, .53], sup: [.75, .6, .48, .38] } },
+    { name: "H_silent", say: "the prior is used without being written", note: "all three lines coincide",
+      aria: "all three lines stay flat together",
+      lines: { nat: [.62, .62, .62, .62], pre: [.62, .635, .635, .635], sup: [.62, .605, .605, .605] } },
+  ];
+  const host2 = document.querySelector("#f2 .mult");
+  FP.forEach(d => {
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    const h = document.createElement("div");
+    h.className = "ph";
+    const b = document.createElement("b");
+    b.textContent = d.name;
+    h.append(b, document.createTextNode(" · " + d.say));
+    const n = document.createElement("div");
+    n.className = "pn";
+    n.textContent = d.note;
+    panel.append(h, n);
+    host2.appendChild(panel);
+
+    const W = 320, H = 190, L = 30, R = 236, T = 12, B = 150;
+    const X = i => L + (R - L) * i / 3, Y = v => B - (B - T) * v / 1.2;
+    const s = mk("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${d.name}, schematic: ${d.aria}` }, panel);
+    mk("line", { x1: L, x2: R, y1: Y(.5), y2: Y(.5), class: "gl" }, s);
+    mk("line", { x1: L, x2: R, y1: B, y2: B, class: "ax" }, s);
+    mk("line", { x1: L, x2: R, y1: Y(1), y2: Y(1), class: "ref" }, s);
+    tx(s, L - 7, B + 4, "0", "tk c", "end");
+    tx(s, L - 7, Y(.5) + 4, "0.5", "tk c", "end");
+    tx(s, L - 7, Y(1) + 4, "1", "tk c", "end");
+    tx(s, R + 6, Y(1) + 4, "Bayes", "tk");
+    tx(s, L, B + 16, "no thinking", "tk");
+    tx(s, R, B + 16, "long", "tk", "end");
+    tx(s, (L + R) / 2, B + 33, "thinking budget →", "tk", "middle");
+    [["sup", "s3", "suppressed"], ["nat", "s1", "as generated"], ["pre", "s2", "written in"]].forEach(([k, cls, lab]) => {
+      const pts = d.lines[k].map((v, i) => [X(i), Y(v)]);
+      mk("path", { d: smooth(pts), class: "ln " + cls }, s);
+      mk("circle", { cx: r1(pts[3][0]), cy: r1(pts[3][1]), r: 4, class: "dot " + cls }, s);
+      if (d.label) tx(s, R + 9, r1(pts[3][1]) + 4, lab, "lab");
+    });
+    mk("circle", { cx: X(0), cy: r1(Y(d.lines.nat[0])), r: 4, class: "dot0" }, s);
+    tx(s, L - 7, T + 2, "ρ", "tk", "end");
+  });
+
+  // Figure 3: empty frame of the step-1 plot, with the pre-run guesses
+  const PF = [
+    { name: "Qwen3-8B", say: "one model, six thinking levels", W: 400,
+      levels: ["none", "512", "2k", "natural", "+1 wait", "+2 wait"],
+      groups: [[1, 2, "interrupted"], [4, 5, "extended"]],
+      guess: { 0: .4, 3: .5, 5: .45 } },
+    { name: "gpt-oss-20b", say: "three effort levels", W: 250,
+      levels: ["low", "medium", "high"],
+      groups: [[0, 2, "planned"]],
+      guess: { 0: .5, 2: .4 } },
+  ];
+  const host3 = document.querySelector("#f3 .frame");
+  PF.forEach(d => {
+    const panel = document.createElement("div");
+    panel.className = "panel";
+    const h = document.createElement("div");
+    h.className = "ph";
+    const b = document.createElement("b");
+    b.textContent = d.name;
+    h.append(b, document.createTextNode(" · " + d.say));
+    panel.append(h);
+    host3.appendChild(panel);
+
+    const W = d.W, H = 196, L = 30, R = W - 10, T = 14, B = 146, pad = 22;
+    const n = d.levels.length;
+    const X = i => L + pad + (R - L - 2 * pad) * i / (n - 1), Y = v => B - (B - T) * v / 1.2;
+    const s = mk("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${d.name}: empty frame; pre-run guesses only` }, panel);
+    mk("line", { x1: L, x2: R, y1: Y(.5), y2: Y(.5), class: "gl" }, s);
+    mk("line", { x1: L, x2: R, y1: B, y2: B, class: "ax" }, s);
+    mk("line", { x1: L, x2: R, y1: Y(1), y2: Y(1), class: "ref" }, s);
+    tx(s, L - 7, B + 4, "0", "tk c", "end");
+    tx(s, L - 7, Y(.5) + 4, "0.5", "tk c", "end");
+    tx(s, L - 7, Y(1) + 4, "1", "tk c", "end");
+    tx(s, R, Y(1) - 6, "Bayes", "tk", "end");
+    tx(s, (L + R) / 2, Y(.8), "results due Nov 5", "pend", "middle");
+    tx(s, L - 7, T + 2, "ρ", "tk", "end");
+    d.levels.forEach((lv, i) => tx(s, X(i), B + 16, lv, "tk", "middle"));
+    d.groups.forEach(([a, z, lab]) => {
+      const x1 = X(a) - 16, x2 = X(z) + 16, y = B + 26;
+      mk("path", { d: `M${x1} ${y - 3}V${y}H${x2}V${y - 3}`, class: "ax", fill: "none" }, s);
+      tx(s, (x1 + x2) / 2, y + 14, lab, "grp", "middle");
+    });
+    Object.entries(d.guess).forEach(([i, v]) => {
+      mk("circle", { cx: X(+i), cy: Y(v), r: 5, class: "guess" }, s);
+      tx(s, X(+i) + 9, Y(v) + 4, String(v), "tk c");
+    });
+  });
+
+  // Figure 4: timeline
+  const TL = [
+    { k: "Step 1 · is it there?", a: "2026-10-30", z: "2026-11-05" },
+    { k: "Go / no-go", a: "2026-11-06", gate: true },
+    { k: "Step 2 and E1–E3", a: "2026-11-06", z: "2026-11-26" },
+    { k: "E4 origin, repair pilot", a: "2026-11-27", z: "2026-12-10" },
+    { k: "E5 repair, E6 transfer", a: "2026-12-11", z: "2027-01-07" },
+    { k: "Analysis and writing", a: "2026-12-28", z: "2027-01-20" },
+    { k: "ICML 2027 deadline (est.)", a: "2027-01-22", gate: true },
+  ];
+  const TODAY = "2026-10-29";
+  const day = s => Date.parse(s + "T00:00:00Z") / 864e5;
+  const fmt = s => new Date(s + "T00:00:00Z").toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+  const host4 = document.querySelector("#f4 .chartwrap");
+  const W = 680, top = 40, rowH = 30, H = top + TL.length * rowH + 6, x0 = 190, x1 = 596;
+  const lo = day("2026-10-26"), hi = day("2027-01-26");
+  const X = s => x0 + (x1 - x0) * (day(s) - lo) / (hi - lo);
+  const s4 = mk("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": "Timeline from October 30, 2026 to the estimated deadline of January 22, 2027" }, host4);
+  ["2026-11-01", "2026-11-15", "2026-12-01", "2026-12-15", "2027-01-01", "2027-01-15"].forEach(t => {
+    mk("line", { x1: X(t), x2: X(t), y1: top - 8, y2: H - 4, class: "gl" }, s4);
+    tx(s4, X(t), top - 14, fmt(t), "tk", "middle");
+  });
+  mk("line", { x1: X(TODAY), x2: X(TODAY), y1: top - 8, y2: H - 4, class: "now" }, s4);
+  tx(s4, X(TODAY) - 4, top - 26, "today", "nowt", "end");
+  TL.forEach((r, i) => {
+    const y = top + i * rowH + rowH / 2;
+    tx(s4, 0, y + 4, r.k, r.gate ? "tlk b" : "tlk");
+    if (r.gate) {
+      const x = X(r.a);
+      mk("path", { d: `M${x} ${y - 8}L${x + 8} ${y}L${x} ${y + 8}L${x - 8} ${y}Z`, class: "gate" }, s4);
+      tx(s4, x + 14, y + 4, fmt(r.a), "tk halo");
+    } else {
+      mk("rect", { x: X(r.a), y: y - 6, width: Math.max(4, X(r.z) - X(r.a)), height: 12, rx: 4, class: "bar" }, s4);
+      tx(s4, X(r.z) + 8, y + 4, `${fmt(r.a)} – ${fmt(r.z)}`, "tk halo");
+    }
+  });
+  const t4 = document.querySelector("#f4 .tablewrap table");
+  const hr = t4.insertRow();
+  ["Item", "Dates"].forEach(c => { const th = document.createElement("th"); th.textContent = c; hr.appendChild(th); });
+  TL.forEach(r => {
+    const tr = t4.insertRow();
+    tr.insertCell().textContent = r.k;
+    tr.insertCell().textContent = r.gate ? fmt(r.a) : `${fmt(r.a)} – ${fmt(r.z)}`;
+  });
+})();
+</script>
+</body>
+</html>
