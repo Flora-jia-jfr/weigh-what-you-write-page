@@ -338,7 +338,7 @@ footer p + p { margin-top: 6px; }
       <div class="term"><div class="tv">evidence log-LR</div><div class="tk">the same in both cards</div></div>
       <p class="after">Between the two ages, the answer’s log-odds should move one-for-one with the model’s own prior: a slope of 1. Because only the prior changes, the move should be the same in a weakened version that drops the positional pain and the scratching sound. A smaller move with those findings than without them means the evidence crowds the prior out.</p>
     </div>
-    <figcaption><b>Figure 1.</b> Abridged from a MedQA exam item (training split, #637), where the patient is 31 and the answer is acute pericarditis. The two cards differ only in the highlighted age. We ask the model for its prior at each age in a separate chat, so the slope is measured against its own knowledge, not a textbook prevalence, and no item needs a true posterior.</figcaption>
+    <figcaption><b>Figure 1.</b> Abridged from a MedQA exam item (training split, #637), where the patient is 31 and the answer is acute pericarditis. The two cards differ only in the highlighted age. We ask the model for its prior at each age separately, from a stripped version of the case, so the slope is measured against its own knowledge, not a textbook prevalence, and no item needs a true posterior.</figcaption>
   </figure>
 
   <h3>Four answers, four fingerprints</h3>
@@ -416,7 +416,7 @@ footer p + p { margin-top: 6px; }
       <tr><td><span class="pill">RQ4</span></td><td><b>Is the error in knowledge or in use?</b></td><td class="g">In the implanted world the true prior shift Δ<sub>true</sub> is known: knowledge error = Δx̂ − Δ<sub>true</sub>, use error = Δy − Δx̂.</td><td class="g">once the prior is learned, it is used correctly</td></tr>
       <tr><td><span class="pill">RQ5</span></td><td><b>Can training fix the use?</b></td><td class="g">RL toward the exact posterior (implanted world) or toward coherence with the model’s own prior (real cases), scored at several reasoning lengths. Success: a slope near 1 on held-out worlds and on exam cases, with no loss in accuracy or on general benchmarks.</td><td class="g">gains appear only on trained items, or come from ignoring the evidence</td></tr>
     </table></div>
-    <figcaption>Δy and Δx̂ are changes between two contexts of the same case: in the answer’s log-odds of one diagnosis over the other, and in the model’s own prior log-odds, asked in a separate chat (§04).</figcaption>
+    <figcaption>Δy and Δx̂ are changes between two contexts of the same case: in the answer’s log-odds of one diagnosis over the other, and in the model’s own prior log-odds, from a stripped version of the case asked separately (§04).</figcaption>
   </figure>
 </section>
 
@@ -425,7 +425,7 @@ footer p + p { margin-top: 6px; }
   <h2>Experiment design</h2>
   <p class="lede">Two tiers. In real exam cases we change only a context cue and check the answer against the model’s own prior. In an implanted world we also know the truth, so errors of knowledge and of use come apart, and the same world serves as a training environment. The first tier needs inference only.</p>
   <div class="box"><div class="lbl">terms used below</div><ul class="steps">
-    <li><b>Own prior x̂.</b> The model’s prior for X over Y at one age, asked in a separate chat with no case: as a share (“among people of this age who have X or Y, what fraction have X?”) and as yearly cases per 100,000, 10 draws each. A behavioral version is its answer to the same case with every telltale finding removed. A stated prior need not be the one a model uses, so the two are checked against each other.</li>
+    <li><b>Own prior x̂.</b> The model’s odds of X over Y at one age before any findings: its answer, in a separate chat, to a stripped case that keeps only the age, sex, setting, chief complaint and any risk factor that defines the population. Stated priors check it, asked with no case as a share (“among people of this age who have X or Y, what fraction have X?”) and as yearly cases per 100,000, 10 draws each. A stated prior need not be the one a model uses, so the two are compared, not merged.</li>
     <li><b>Evidence strength.</b> Full: the exam case as written. Weakened: the findings that best separate X from Y are removed, and nothing is added.</li>
     <li><b>Δy, Δx̂, slope, invariance.</b> Δy is the change in the answer’s log-odds of X over Y between two ages, and Δx̂ the change in the own prior. Bayes gives Δy = Δx̂ (a slope of 1), and the same Δy at both evidence strengths.</li>
     <li><b>Mention M.</b> Whether the trace states the prior, judged by a regex plus an LLM judge and checked against human labels.</li>
@@ -436,7 +436,7 @@ footer p + p { margin-top: 6px; }
   <div class="eq">Δ<i>y</i><sub>ie</sub>(<i>b</i>) = β<sub>e</sub>(<i>b</i>) · Δ<i>x̂</i><sub>i</sub> + ε<sub>ie</sub><span class="sep"></span>Bayes: β<sub>full</sub> = β<sub>weak</sub> = 1</div>
   <p style="margin-top:14px">Here i is the item, e the evidence strength and b the thinking level. Only the age changes, so the likelihood of the findings cancels: no item needs a likelihood or a true posterior. Where epidemiology gives the true change Δ<sub>true</sub>, the gap splits in two:</p>
   <div class="eq">Δ<i>y</i> − Δ<sub>true</sub> = (Δ<i>x̂</i> − Δ<sub>true</sub>) + (Δ<i>y</i> − Δ<i>x̂</i>)<span class="sep"></span>knowledge + use</div>
-  <p style="margin-top:14px">Three assumptions stay in view. The age should change only the prior, not how likely the findings are, so we exclude cases where age changes what a finding means. The stated prior should be the one in use, so we compare it with the behavioral prior. And exam items may be memorized, so we compare original and edited versions, which are new text. Intervals come from a bootstrap over items.</p>
+  <p style="margin-top:14px">Three assumptions stay in view. The age should change only the prior, not how likely the findings are, so we exclude cases where age changes what a finding means. The stripped case should carry the prior the full case starts from, so we compare it with the stated priors. And exam items may be memorized, so a placebo version moves the age by only two years, where Bayes predicts almost no change. Intervals come from a bootstrap over items.</p>
 
   <h3>Items and models</h3>
   <div class="two">
@@ -444,13 +444,13 @@ footer p + p { margin-top: 6px; }
       <li>Source: MedQA items that ask for the most likely diagnosis, written for licensing exams.</li>
       <li>Keep an item if one wrong option is a real alternative whose base rate, relative to the answer, changes with age in a direction epidemiology supports.</li>
       <li>The age must change without contradiction: no pregnancy, menopause or school details tied to it, unless they can be dropped from every version. Text only.</li>
-      <li>Versions: two ages × full or weakened evidence; asked plainly or with a reminder; two options, with their order balanced.</li>
+      <li>Versions: two ages × full or weakened evidence; asked plainly or with a reminder; two options, with their order balanced; plus a placebo with the age moved by two years.</li>
       <li>Items are screened and edited by a model that is not under test, checked one by one, then frozen.</li>
     </ul></div>
     <div class="box"><div class="lbl">what goes in, what comes out</div><ul>
       <li>In: the case, then “Assume the diagnosis is exactly one of (A) X or (B) Y. Which is more likely, and what is P(A)?”</li>
       <li>Out: a choice, P(A) and the full trace.</li>
-      <li>In a separate chat: the own-prior questions at each age, and the stripped case for the behavioral prior.</li>
+      <li>In separate chats: the stripped case at each age for the own prior, and the stated-prior questions as a check.</li>
       <li>From the trace: whether it states how age changes the base rates, the numbers it writes, and whether it computes with them.</li>
     </ul></div>
   </div>
@@ -528,7 +528,7 @@ footer p + p { margin-top: 6px; }
   <figure>
     <div class="tscroll"><table class="t">
       <tr><th style="width:42px"></th><th>What</th><th style="width:30%">Models</th><th style="width:10%">Answers</th></tr>
-      <tr><td class="n">E0</td><td>Measurement checks: the age moves the own prior by at least 1 logit; test–retest of x̂; stated against behavioral prior; edits checked by a clinician; original against edited items</td><td class="g">Qwen3-8B, gpt-oss</td><td class="g">can we measure it</td></tr>
+      <tr><td class="n">E0</td><td>Measurement checks: the age moves the own prior by at least 1 logit; test–retest of x̂; stated priors against the stripped case; edits checked by a clinician; a placebo that moves the age by two years</td><td class="g">Qwen3-8B, gpt-oss</td><td class="g">can we measure it</td></tr>
       <tr><td class="n">E1</td><td>Coherence in exam cases: two ages × two evidence strengths × thinking levels</td><td class="g">open reasoning models (Qwen3-8B/32B, gpt-oss, OLMo-3-7B-Think, DeepSeek-R1-0528-Qwen3-8B), plus 2–3 API models</td><td><span class="pill">RQ1</span> <span class="pill">RQ2</span></td></tr>
       <tr><td class="n">E2</td><td>Reminder arm and trace coding: what the trace states, computes and uses</td><td class="g">open models</td><td><span class="pill">RQ2</span> <span class="pill">RQ3</span></td></tr>
       <tr><td class="n">E3</td><td>Trace interventions: own-prior prefill, neutral prefill, on-policy suppression; k restatements, early or late</td><td class="g">open models</td><td><span class="pill">RQ3</span></td></tr>
