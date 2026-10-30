@@ -267,7 +267,7 @@ footer p + p { margin-top: 6px; }
       <p class="meta">Research proposal · October 2026</p>
       <h1>Do reasoning models weigh what they <em>write</em>?</h1>
       <p class="kick">If a model never writes down what it knows, does that knowledge still count?</p>
-      <p class="sub">A model may know that Lyme disease is common in Connecticut in July, yet a case that says only “July, Connecticut” never states that prior. We ask whether such unstated knowledge still moves the answer as the model thinks longer, and whether it first has to be written into the trace. We measure its weight against the Bayesian value of 1, look for where the behavior comes from in RL training, and train the weight toward 1.</p>
+      <p class="sub">A model may know that a heart attack is rare at 31 and common at 68, yet an exam case that gives only the age never states that prior. We ask whether reasoning models use such knowledge the way Bayes’ rule says they should, and whether thinking longer makes them more Bayesian or only makes them talk about it. In a world of fictional diseases that we train into a model, the truth is known, so we can tell errors of knowledge from errors of use, and then train the use.</p>
     </div>
     <figure class="herofig">
       <svg viewBox="0 0 400 300" role="img" aria-label="Three routes to the answer: the model's own prior acts through a sentence in the trace or silently; the symptoms act through the trace. Prefill and suppression fix whether the trace states the prior.">
@@ -309,26 +309,26 @@ footer p + p { margin-top: 6px; }
     </figure>
   </div>
   <ol class="rqs">
-    <li><span class="q">RQ1</span><b>How much does it count?</b>The weight on the model’s own unstated prior, against Bayes’ 1, across thinking budgets.</li>
-    <li><span class="q">RQ2</span><b>Only once written?</b>Fix whether the trace states the prior, at 1 or 0, and see how much effect is left.</li>
-    <li><span class="q">RQ3</span><b>More if written more?</b>Repeat a sentence k times, early or late in the trace.</li>
-    <li><span class="q">RQ4</span><b>Where does it come from?</b>The same measures across OLMo-3’s SFT, DPO and RLVR checkpoints.</li>
-    <li><span class="q">RQ5</span><b>Can RL fix it?</b>Reward the normative posterior at several reasoning lengths; test on held-out disease pairs.</li>
+    <li><span class="q">RQ1</span><b>Do they use what they know?</b>Change only the age in a real exam case. The answer should move as far as the model’s own prior moves, with or without the telltale findings.</li>
+    <li><span class="q">RQ2</span><b>Does thinking make them Bayesian?</b>The same checks at several thinking levels, with and without a reminder to weigh how common each disease is.</li>
+    <li><span class="q">RQ3</span><b>What happens in the trace?</b>Does the trace state the prior, use the prior it states, or count the findings twice? Write the prior in or suppress it, and watch the answer.</li>
+    <li><span class="q">RQ4</span><b>Knowledge or use?</b>In a world of fictional diseases implanted by training, split the error into what the model learned and how it uses it.</li>
+    <li><span class="q">RQ5</span><b>Can training fix the use?</b>RL toward the exact posterior in the implanted world and toward coherence on real cases; test on exam cases.</li>
   </ol>
 </header>
 
 <!-- ============ the test ============ -->
 <section id="test">
-  <h2>One case, two contexts</h2>
-  <p class="lede">Each item is a choice between two diagnoses. The symptoms stay fixed. Only a context cue changes: a place, a season, an age, never a rate or a prevalence. The cue moves the model’s own prior, and Bayes’ rule says how far the answer should move.</p>
+  <h2>One case, two ages</h2>
+  <p class="lede">Each item is a real exam case reduced to a choice between two diagnoses. Only a context cue changes, here the patient’s age; the findings stay the same. The age moves the model’s own prior, and Bayes’ rule says how far the answer should move.</p>
   <figure>
     <div class="cards">
-      <div class="vcard"><div class="lbl">context 1</div>
-        <p>A 34-year-old woman <mark>in Connecticut in July</mark> has had fever, fatigue and muscle aches for four days. The diagnosis is either (A) Lyme disease or (B) a viral syndrome. What is P(A)?</p>
-        <div class="vfoot">Lyme is common here, so the prior for A is <b>high</b></div></div>
-      <div class="vcard"><div class="lbl">context 2</div>
-        <p>A 34-year-old woman <mark>in Arizona in January</mark> has had fever, fatigue and muscle aches for four days. The diagnosis is either (A) Lyme disease or (B) a viral syndrome. What is P(A)?</p>
-        <div class="vfoot">Lyme is rare here, so the prior for A is <b>low</b></div></div>
+      <div class="vcard"><div class="lbl">age 31</div>
+        <p>An otherwise healthy <mark>31-year-old</mark> man has had sharp, central chest pain for several days. It is worse lying down and better sitting forward, a scratching sound is heard while he leans forward, and troponin is mildly elevated. Is it (A) acute pericarditis or (B) an ST-elevation myocardial infarction? What is P(A)?</p>
+        <div class="vfoot">A heart attack is rare at 31, so the prior for A is <b>high</b></div></div>
+      <div class="vcard"><div class="lbl">age 68</div>
+        <p>An otherwise healthy <mark>68-year-old</mark> man has had sharp, central chest pain for several days. It is worse lying down and better sitting forward, a scratching sound is heard while he leans forward, and troponin is mildly elevated. Is it (A) acute pericarditis or (B) an ST-elevation myocardial infarction? What is P(A)?</p>
+        <div class="vfoot">A heart attack is common at 68, so the prior for A is <b>lower</b></div></div>
     </div>
     <div class="bayes">
       <div class="term"><div class="tv">log-odds of A</div><div class="tk">what we read from the answer</div></div>
@@ -336,36 +336,36 @@ footer p + p { margin-top: 6px; }
       <div class="term hot"><div class="tv">prior log-odds</div><div class="tk">moved by the cue</div></div>
       <div class="op">+</div>
       <div class="term"><div class="tv">evidence log-LR</div><div class="tk">the same in both cards</div></div>
-      <p class="after">Across contexts, the answer’s log-odds should move one-for-one with the model’s own prior: a slope of 1. Below 1 the prior is under-used; above 1, over-used.</p>
+      <p class="after">Between the two ages, the answer’s log-odds should move one-for-one with the model’s own prior: a slope of 1. Because only the prior changes, the move should be the same in a weakened version that drops the positional pain and the scratching sound. A smaller move with those findings than without them means the evidence crowds the prior out.</p>
     </div>
-    <figcaption><b>Figure 1.</b> The two items differ only in the highlighted cue. We ask the model for its prior in each context in a separate chat, so the slope is measured against the model’s own knowledge, not a textbook prevalence. This pair is an illustration; the study uses the pairs in Table 2.</figcaption>
+    <figcaption><b>Figure 1.</b> Abridged from a MedQA exam item (training split, #637), where the patient is 31 and the answer is acute pericarditis. The two cards differ only in the highlighted age. We ask the model for its prior at each age in a separate chat, so the slope is measured against its own knowledge, not a textbook prevalence, and no item needs a true posterior.</figcaption>
   </figure>
 
   <h3>Four answers, four fingerprints</h3>
-  <p>We fix four hypotheses before the first run. They predict different patterns on the same three curves, and they can hold in part at once, so we report graded results rather than a winner.</p>
+  <p>We fix four hypotheses before the first run. They predict different patterns on the same three lines, and they can hold in part at once, so we report graded results rather than a winner.</p>
   <figure>
     <div class="chart-card" id="f2">
       <button class="viewtable" data-for="f2">table</button>
-      <div class="ct">Predicted ρ as thinking grows</div>
-      <div class="cs">Schematic, not data. ρ = weight on the prior ÷ weight on the symptoms; Bayes gives 1.</div>
+      <div class="ct">Predicted slope on the model’s own prior as thinking grows</div>
+      <div class="cs">Schematic, not data. Slope = change in the answer ÷ change in the model’s own prior when only the age changes; Bayes gives 1.</div>
       <div class="legend">
-        <span><i class="lk s1"></i>as generated</span>
-        <span><i class="lk s2"></i>prior written in (prefill)</span>
-        <span><i class="lk s3"></i>prior suppressed (on-policy)</span>
+        <span><i class="lk s1"></i>full case</span>
+        <span><i class="lk s2"></i>telltale findings removed</span>
+        <span><i class="lk s3"></i>with a base-rate reminder</span>
         <span><i class="lk ref"></i>Bayes</span>
       </div>
       <div class="mult chartwrap"></div>
       <div class="tablewrap hidden">
         <table class="dt">
-          <tr><th>Hypothesis</th><th>Prior weight β<sub>impl</sub></th><th>Symptom weight β<sub>evid</sub></th><th>ρ, as plotted</th><th>Prefill the model’s own prior</th><th>On-policy suppression</th></tr>
-          <tr><td>H_gate: an unwritten prior fades</td><td>falls</td><td>flat</td><td>falls</td><td>restores most of the weight at high budget</td><td>prior effect near 0 at high budget</td></tr>
-          <tr><td>H_recruit: longer traces write the prior, and use it</td><td>rises, in step with how often traces state it</td><td>flat</td><td>rises</td><td>largest effect at low budget</td><td>cancels the rise</td></tr>
-          <tr><td>H_amplify: restated symptoms are counted twice</td><td>flat</td><td>rises</td><td>falls</td><td>helps, but ρ still falls</td><td>small effect</td></tr>
-          <tr><td>H_silent: the prior is used without being written</td><td>flat</td><td>flat</td><td>flat</td><td>near 0</td><td>near 0</td></tr>
+          <tr><th>Hypothesis</th><th>Slope, full case</th><th>Slope, findings removed</th><th>With a reminder</th><th>Traces that state the prior</th></tr>
+          <tr><td>H_bayes: thinking makes the model Bayesian</td><td>rises toward 1</td><td>rises toward 1</td><td>near 1</td><td>rise</td></tr>
+          <tr><td>H_crowd: strong evidence crowds the prior out</td><td>falls</td><td>stays near 1</td><td>helps only in part</td><td>may rise</td></tr>
+          <tr><td>H_talk: the prior is stated but not used</td><td>flat, below 1</td><td>flat, below 1</td><td>small effect</td><td>rise</td></tr>
+          <tr><td>H_wont: it can use the prior but does not unless asked</td><td>flat, low</td><td>flat, low</td><td>near 1</td><td>rise only with the reminder</td></tr>
         </table>
       </div>
     </div>
-    <figcaption><b>Figure 2.</b> With no thinking there is no trace to edit, so the three lines start together. Under H_gate, writing the prior in restores its weight and suppressing it removes it. Under H_recruit, the natural rise disappears once mentions are suppressed. Under H_amplify, the ratio falls because the symptom weight grows, so prefill helps only in part. Under H_silent neither intervention matters; that would carry the silent use that <a href="https://arxiv.org/abs/2610.18105">Bürger et al. (2026)</a> show for information in the prompt over to knowledge in the weights.</figcaption>
+    <figcaption><b>Figure 2.</b> Under H_bayes, thinking closes the gap on every line. Under H_crowd, the full case falls away from the weakened one as thinking grows: restating the telltale findings outweighs the prior. Under H_talk, traces state the prior and may even compute with it, yet the slope does not move; writing the prior down would then not be enough. Under H_wont, a one-line reminder restores the slope, so the model can use the prior but treats the case as a closed world.</figcaption>
   </figure>
 </section>
 
@@ -382,77 +382,100 @@ footer p + p { margin-top: 6px; }
     <div class="box b"><div class="lbl">missing</div><ul>
       <li>For knowledge that lives only in the weights, no one has separated the written route from the silent one.</li>
       <li>No one has scored that knowledge’s weight against the Bayesian value as the thinking budget grows.</li>
+      <li>No one has checked whether a model’s answers agree with its own stated base rates when only the context of a case changes, or told errors of knowledge from errors of use against a known truth.</li>
       <li>“Longer reasoning ignores base rates” has no direct evidence. Gema et al. use a non-medical regression, DiagRare’s budget runs are confounded by truncation, and <a href="https://arxiv.org/abs/2507.00310">AutoDiscovery</a> varies the amount of evidence, not the length of reasoning.</li>
     </ul></div>
   </div>
-  <p>One hypothesis could explain both directions: <b>reasoning models weigh what they write.</b> If diagnostic traces spend most of their length restating symptoms, an unwritten prior would be crowded out; recall traces write the facts out, so memory gains. In Gema et al.’s appendix example the prior is written once while a spurious feature is discussed again and again, and the prior loses.</p>
-  <p>Diagnosis is a clean test bed. Bayes gives the right weight. Pre-test probability really does change with setting and region, so a cue can move the prior inside one case. Traces list the symptoms one by one; how often they also state prevalence is one of the first things we measure. It is also a live problem: without a prevalence cue, GPT-4o over-diagnoses rare emergencies <span class="g">(Safranek et al. 2026)</span>, and whether LLMs name the right diagnosis tracks how much literature a disease has, not how common it is <span class="g">(Ríos-Hoyo 2024)</span>. Whether longer reasoning makes this better or worse has not been measured.</p>
+  <p>One hypothesis could explain both directions: <b>reasoning models weigh what they write.</b> If diagnostic traces spend most of their length restating symptoms, an unwritten prior would be crowded out; recall traces write the facts out, so memory gains. In Gema et al.’s appendix example the prior is written once while a spurious feature is discussed again and again, and the prior loses. The reverse is also possible: a model may write the prior down, even compute with it, and still not weigh it. Telling these apart needs a check against the model’s own knowledge.</p>
+  <p>Diagnosis is a clean test bed. Bayes gives the right weight. Pre-test probability really does change with setting and region, so a cue can move the prior inside one case. Clinician-written exam cases supply realistic findings, and we edit only the cue. Traces list the symptoms one by one; how often they also state prevalence is one of the first things we measure. It is also a live problem: without a prevalence cue, GPT-4o over-diagnoses rare emergencies <span class="g">(Safranek et al. 2026)</span>, and whether LLMs name the right diagnosis tracks how much literature a disease has, not how common it is <span class="g">(Ríos-Hoyo 2024)</span>. Whether longer reasoning makes this better or worse has not been measured.</p>
   <figure class="wide">
     <div class="tscroll"><table class="t">
       <tr><th style="width:21%"></th><th>DiagRare-Bench</th><th>Bürger et al. 2026</th><th>Gema et al. 2025</th><th>Thinking to Recall</th><th>Sun et al. 2026</th><th class="us">This work</th></tr>
-      <tr><td>Prior lives only in the weights</td><td class="no">partly; never elicited</td><td class="no">no; prompt attributes</td><td class="no">partly; an unstated feature</td><td class="y">yes, but facts, not priors</td><td class="no">no; inferred from examples</td><td class="y us">yes; moved within a case</td></tr>
-      <tr><td>Weight scored against Bayes</td><td class="no">no; relative across models</td><td class="no">no</td><td class="no">no; correlation, RMSE</td><td class="no">no; accuracy</td><td class="y">yes; posterior error</td><td class="y us">yes; slope against 1</td></tr>
+      <tr><td>Prior lives only in the weights</td><td class="no">partly; never elicited</td><td class="no">no; prompt attributes</td><td class="no">partly; an unstated feature</td><td class="y">yes, but facts, not priors</td><td class="no">no; inferred from examples</td><td class="y us">yes; moved within real exam cases</td></tr>
+      <tr><td>Weight scored against Bayes</td><td class="no">no; relative across models</td><td class="no">no</td><td class="no">no; correlation, RMSE</td><td class="no">no; accuracy</td><td class="y">yes; posterior error</td><td class="y us">yes; against the model’s own prior</td></tr>
       <tr><td>Written and silent routes separated causally</td><td class="no">no; traces not read</td><td class="no">partly; direct vs. through the CoT, on Thyroid</td><td class="no">no</td><td class="no">no; filler-trace control</td><td class="no">no</td><td class="y us">yes; on the trace</td></tr>
-      <tr><td>Thinking-budget curve</td><td class="y">yes; hard caps, many overflow</td><td class="no">no</td><td class="y">yes</td><td class="no">no; reasoning on or off</td><td class="no">no</td><td class="y us">yes; three protocols</td></tr>
-      <tr><td>Training origin or a fix</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="y">fix; GRPO toward the posterior</td><td class="y us">origin and fix</td></tr>
+      <tr><td>Thinking-budget curve</td><td class="y">yes; hard caps, many overflow</td><td class="no">no</td><td class="y">yes</td><td class="no">no; reasoning on or off</td><td class="no">no</td><td class="y us">yes; several levels</td></tr>
+      <tr><td>Training origin or a fix</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="y">fix; GRPO toward the posterior</td><td class="y us">fix, with an exact target</td></tr>
+      <tr><td>Known truth that separates knowledge from use</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">no</td><td class="no">partly; base rates given in the prompt</td><td class="y us">yes; an implanted world</td></tr>
     </table></div>
     <figcaption><b>Table 1.</b> Closest work as of October 26, 2026. <a href="https://github.com/rdharini2001/DiagRare">DiagRare-Bench</a> (ICLR 2027 submission) fits prior and evidence coefficients with a Plackett-Luce model, crosses stated prevalence with evidence strength on 27 disease pairs, and sweeps Qwen3-8B’s thinking budget with hard caps. <a href="https://arxiv.org/abs/2610.18105">Bürger et al.</a> split a prompt attribute’s effect into a direct part and a part through the chain of thought (on Thyroid), and find that the chain of thought rarely mentions the attribute. <a href="https://arxiv.org/abs/2507.14417">Gema et al.</a> see an unstated prior lose weight with budget in Claude and o3-mini. <a href="https://arxiv.org/abs/2603.09906">Thinking to Recall</a> traces recall gains to facts written in the trace. <a href="https://arxiv.org/abs/2609.38005">Sun et al.</a> train Qwen3-8B with a reward on the true posterior, inferring base rates from labeled examples in the prompt. The regression itself is Grether (1980), already used on LLMs by <a href="https://arxiv.org/abs/2402.18225">CogBench</a>; we do not claim it.</figcaption>
   </figure>
-  <p>Our earlier work built a pipeline from Bayes nets to text to continual pretraining, which none of the closest competitors above has. It can implant a known prior into a model, which would give the repair an exact ground truth (stretch experiment S1).</p>
+  <p>Our earlier work built a pipeline from Bayes nets to text to continual pretraining, which none of the closest competitors above has. It implants known priors into a model. Here it becomes the second tier of the study, where the truth is known and errors of knowledge and of use can be told apart.</p>
 </section>
 
 <!-- ============ questions ============ -->
 <section id="questions">
   <h2>Goal and questions</h2>
-  <p class="lede">The goal is a rule for how reasoning models use what they know, and a method that fixes the misuse. Diagnosis, DDXPlus, prefill and suppression are tools, not the goal.</p>
+  <p class="lede">The goal is a rule for how reasoning models use what they know, and a method that fixes the misuse. Exam cases, the implanted world, prefill and suppression are tools, not the goal.</p>
   <figure class="wide">
     <div class="tscroll"><table class="t">
       <tr><th style="width:62px"></th><th style="width:27%">Question</th><th>How we read it</th><th style="width:26%">We drop the claim if</th></tr>
-      <tr><td><span class="pill">RQ1</span></td><td><b>How much does the unstated prior count, and how does that change with thinking?</b></td><td class="g">β<sub>impl</sub> against 1, and ρ = β<sub>impl</sub> / β<sub>evid</sub> at each budget. ρ is the main measure because longer thinking makes answers more extreme, which inflates both slopes.</td><td class="g">ρ is flat across budgets (equivalence test, ±0.1) and near 1 in every model</td></tr>
-      <tr><td><span class="pill">RQ2</span></td><td><b>Does it count only once written?</b></td><td class="g">The prior’s slope with the mention held at 1 (prefill) and at 0 (suppression): the controlled direct effects CDE<sub>1</sub> and CDE<sub>0</sub>. Share through writing = 1 − CDE<sub>0</sub> / total effect, by budget.</td><td class="g">suppression leaves the effect intact and prefill does not move the answers</td></tr>
-      <tr><td><span class="pill">RQ3</span></td><td><b>Does writing it more count more?</b></td><td class="g">Change in log-odds per extra restatement, k ∈ {0, 1, 2, 4}, of a symptom or of the prior, inserted early or late.</td><td class="g">log-odds do not change with k</td></tr>
-      <tr><td><span class="pill">RQ4</span></td><td><b>Where does it come from?</b></td><td class="g">The same measures across OLMo-3-7B-Think’s SFT, DPO and about 10 RLVR checkpoints; RL-Zero-Math against RL-Zero-General and RL-Zero-IF.</td><td class="g">the measures are flat across training stages</td></tr>
-      <tr><td><span class="pill">RQ5</span></td><td><b>Can RL train the right weight?</b></td><td class="g">On held-out disease pairs, ρ within 1 ± 0.1 and flat across budgets, with β<sub>evid</sub> not falling and no loss on general benchmarks.</td><td class="g">gains appear only on trained pairs, or come from a lower β<sub>evid</sub></td></tr>
+      <tr><td><span class="pill">RQ1</span></td><td><b>Do models use what they know when only the context changes?</b></td><td class="g">Per item, the change in the answer’s log-odds between two ages (Δy) against the change in the model’s own prior (Δx̂). Bayes gives a slope of 1, and the same slope with the telltale findings removed. The direction is also checked against epidemiology.</td><td class="g">the slope is near 1 and equal at both evidence strengths, in every model</td></tr>
+      <tr><td><span class="pill">RQ2</span></td><td><b>Does thinking make them Bayesian?</b></td><td class="g">The RQ1 measures at each thinking level; a reminder arm (“take into account how common each condition is”) separates cannot from will not; how often traces state the prior or compute with it.</td><td class="g">thinking alone moves the slope to 1 at both evidence strengths</td></tr>
+      <tr><td><span class="pill">RQ3</span></td><td><b>What happens in the trace?</b></td><td class="g">Code each trace for the prior it recalls, the prior it uses and repeated findings. Prefill the model’s own prior sentence or suppress it on-policy; the controlled direct effects CDE<sub>1</sub> and CDE<sub>0</sub> give the share that flows through writing.</td><td class="g">traces use the priors they state, and editing the trace does not move the answer</td></tr>
+      <tr><td><span class="pill">RQ4</span></td><td><b>Is the error in knowledge or in use?</b></td><td class="g">In the implanted world the true prior shift Δ<sub>true</sub> is known: knowledge error = Δx̂ − Δ<sub>true</sub>, use error = Δy − Δx̂.</td><td class="g">once the prior is learned, it is used correctly</td></tr>
+      <tr><td><span class="pill">RQ5</span></td><td><b>Can training fix the use?</b></td><td class="g">RL toward the exact posterior (implanted world) or toward coherence with the model’s own prior (real cases), scored at several reasoning lengths. Success: a slope near 1 on held-out worlds and on exam cases, with no loss in accuracy or on general benchmarks.</td><td class="g">gains appear only on trained items, or come from ignoring the evidence</td></tr>
     </table></div>
-    <figcaption>β<sub>impl</sub> and β<sub>evid</sub> are the slopes of the answer’s log-odds on the model’s own prior and on the symptom evidence. Bayes gives 1 for each, and ρ is their ratio (§04).</figcaption>
+    <figcaption>Δy and Δx̂ are changes between two contexts of the same case: in the answer’s log-odds of one diagnosis over the other, and in the model’s own prior log-odds, asked in a separate chat (§04).</figcaption>
   </figure>
 </section>
 
 <!-- ============ design ============ -->
 <section id="design">
   <h2>Experiment design</h2>
-  <p class="lede">In each trial the symptoms are fixed, a context cue moves the prior, we intervene on whether the trace states that prior, and we read the log-odds of the answer. The diagnosis part needs inference only; the origin part uses public checkpoints; the repair is RL.</p>
+  <p class="lede">Two tiers. In real exam cases we change only a context cue and check the answer against the model’s own prior. In an implanted world we also know the truth, so errors of knowledge and of use come apart, and the same world serves as a training environment. The first tier needs inference only.</p>
   <div class="box"><div class="lbl">terms used below</div><ul class="steps">
-    <li><b>Own prior x̂.</b> The model’s prior for A over B in one context, asked in a separate chat: as a stated share (x̂<sub>decl</sub>, two wordings, 10 draws each), and as its answer to the same case with the symptoms removed (x̂<sub>beh</sub>).</li>
-    <li><b>Evidence ℓ.</b> The log-likelihood ratio of the evidence in the case. It has to be known for the slope to have a Bayesian reference; items use four levels, near ±0.7 and ±2.5.</li>
-    <li><b>β<sub>impl</sub>, β<sub>evid</sub>, ρ.</b> Slopes of the answer’s log-odds on x̂ and on ℓ within a disease pair; Bayes gives 1 for each. ρ = β<sub>impl</sub> / β<sub>evid</sub> is the main measure.</li>
-    <li><b>Mention M.</b> Whether the trace states the prior, judged by a regex plus an LLM judge and checked against human labels. “Silent” means unstated: the cue’s effect may still travel through other content in the trace (a question about tick bites, say), which the definition of a mention has to take into account.</li>
-    <li><b>Budget b.</b> The length of one reasoning trace. We study sequential thinking only and give the model no tools: search would look the prevalence up, and Python would force the prior into a number.</li>
+    <li><b>Own prior x̂.</b> The model’s prior for X over Y at one age, asked in a separate chat with no case: as a share (“among people of this age who have X or Y, what fraction have X?”) and as yearly cases per 100,000, 10 draws each. A behavioral version is its answer to the same case with every telltale finding removed. A stated prior need not be the one a model uses, so the two are checked against each other.</li>
+    <li><b>Evidence strength.</b> Full: the exam case as written. Weakened: the findings that best separate X from Y are removed, and nothing is added.</li>
+    <li><b>Δy, Δx̂, slope, invariance.</b> Δy is the change in the answer’s log-odds of X over Y between two ages, and Δx̂ the change in the own prior. Bayes gives Δy = Δx̂ (a slope of 1), and the same Δy at both evidence strengths.</li>
+    <li><b>Mention M.</b> Whether the trace states the prior, judged by a regex plus an LLM judge and checked against human labels.</li>
+    <li><b>Thinking level.</b> The length of one reasoning trace. We study sequential thinking only and give the model no tools: search would look the prevalence up, and Python would force the prior into a number.</li>
   </ul></div>
 
   <h3>The estimate</h3>
-  <div class="eq"><i>y</i><sub>pcs</sub>(<i>b</i>) = β<sub>impl</sub>(<i>b</i>) · <i>x̂</i><sub>pc</sub> + β<sub>evid</sub>(<i>b</i>) · <i>ℓ</i><sub>s</sub> + α<sub>p</sub> + ε<sub>pcs</sub><span class="sep"></span>ρ(<i>b</i>) = β<sub>impl</sub>(<i>b</i>) / β<sub>evid</sub>(<i>b</i>)</div>
-  <p style="margin-top:14px">Here y is the log-odds of A in the answer, x̂ the model’s own prior log-odds, p the disease pair, c the context, s the evidence level, and α<sub>p</sub> a pair fixed effect. The evidence is the same across contexts, so estimating β<sub>impl</sub> needs no likelihoods at all. Noise in x̂ is corrected with ORIV <span class="g">(Gillen, Snowberg &amp; Yariv 2019)</span>: the draws are split into halves and each half instruments the other. With few disease pairs, intervals for changes in ρ come from a jackknife over pairs, with a wild cluster bootstrap as a check.</p>
-  <p>A slope of 1 rests on assumptions we keep in view. The cue should move the prior but not how likely the evidence is, which age cues can violate. ℓ is a reference value, not the model’s own likelihood, so we read the change in ρ with budget before its distance from 1. And x̂ is elicited without thinking, so we elicit it again after long thinking to check for drift.</p>
+  <div class="eq">Δ<i>y</i><sub>ie</sub>(<i>b</i>) = β<sub>e</sub>(<i>b</i>) · Δ<i>x̂</i><sub>i</sub> + ε<sub>ie</sub><span class="sep"></span>Bayes: β<sub>full</sub> = β<sub>weak</sub> = 1</div>
+  <p style="margin-top:14px">Here i is the item, e the evidence strength and b the thinking level. Only the age changes, so the likelihood of the findings cancels: no item needs a likelihood or a true posterior. Where epidemiology gives the true change Δ<sub>true</sub>, the gap splits in two:</p>
+  <div class="eq">Δ<i>y</i> − Δ<sub>true</sub> = (Δ<i>x̂</i> − Δ<sub>true</sub>) + (Δ<i>y</i> − Δ<i>x̂</i>)<span class="sep"></span>knowledge + use</div>
+  <p style="margin-top:14px">Three assumptions stay in view. The age should change only the prior, not how likely the findings are, so we exclude cases where age changes what a finding means. The stated prior should be the one in use, so we compare it with the behavioral prior. And exam items may be memorized, so we compare original and edited versions, which are new text. Intervals come from a bootstrap over items.</p>
 
   <h3>Items and models</h3>
+  <div class="two">
+    <div class="box"><div class="lbl">from an exam item to four versions</div><ul>
+      <li>Source: MedQA items that ask for the most likely diagnosis, written for licensing exams.</li>
+      <li>Keep an item if one wrong option is a real alternative whose base rate, relative to the answer, changes with age in a direction epidemiology supports.</li>
+      <li>The age must change without contradiction: no pregnancy, menopause or school details tied to it, unless they can be dropped from every version. Text only.</li>
+      <li>Versions: two ages × full or weakened evidence; asked plainly or with a reminder; two options, with their order balanced.</li>
+      <li>Items are screened and edited by a model that is not under test, checked one by one, then frozen.</li>
+    </ul></div>
+    <div class="box"><div class="lbl">what goes in, what comes out</div><ul>
+      <li>In: the case, then “Assume the diagnosis is exactly one of (A) X or (B) Y. Which is more likely, and what is P(A)?”</li>
+      <li>Out: a choice, P(A) and the full trace.</li>
+      <li>In a separate chat: the own-prior questions at each age, and the stripped case for the behavioral prior.</li>
+      <li>From the trace: whether it states how age changes the base rates, the numbers it writes, and whether it computes with them.</li>
+    </ul></div>
+  </div>
   <figure>
     <div class="tscroll"><table class="t">
-      <tr><th style="width:44px"></th><th style="width:27%">Pair</th><th>Three contexts, prior for the second disease rising →</th><th style="width:13%">Cue</th><th style="width:13%">Rarer is worse</th></tr>
-      <tr><td class="n">P1</td><td>URTI vs influenza</td><td class="g">Minnesota in July · early December · late January</td><td class="g">season</td><td>yes</td></tr>
-      <tr><td class="n">P2</td><td>Pneumonia vs tuberculosis</td><td class="g">moved from Mexico over ten years ago · moved from Mexico 3 months ago · from the Philippines 3 months ago</td><td class="g">origin</td><td class="no">no</td></tr>
-      <tr><td class="n">P3</td><td>GERD vs possible NSTEMI/STEMI</td><td class="g">man aged 35 · 48 · 75</td><td class="g">age</td><td>yes</td></tr>
-      <tr><td class="n">P4</td><td>PSVT vs atrial fibrillation</td><td class="g">woman aged 25 · 50 · 80</td><td class="g">age</td><td class="no">no</td></tr>
-      <tr><td class="n">P5</td><td>Bronchiolitis vs croup</td><td class="g">3 months · 12 months · 22 months old</td><td class="g">age</td><td>yes</td></tr>
-      <tr><td class="n">P6</td><td>Panic attack vs pulmonary embolism</td><td class="g">office worker · off a 14-hour flight yesterday · day 4 after hip replacement</td><td class="g">recent event</td><td>yes</td></tr>
-      <tr><td class="n">P7</td><td>Acute rhinosinusitis vs allergic sinusitis</td><td class="g">Atlanta in January · July · early April</td><td class="g">season</td><td class="no">no</td></tr>
-      <tr><td class="n">P8</td><td>Pneumonia vs pulmonary neoplasm</td><td class="g">man aged 40 · 50 · 75</td><td class="g">age</td><td class="no">no</td></tr>
+      <tr><th style="width:24%">Exam item</th><th style="width:13%">Ages</th><th>Removed in the weakened version</th><th style="width:30%">Bayes predicts</th></tr>
+      <tr><td><b>Acute pericarditis</b> vs ST-elevation myocardial infarction</td><td class="g">31 → 68</td><td class="g">pain worse lying down and better sitting forward; the scratching sound</td><td class="g">P(pericarditis) falls by the model’s own prior shift, with or without those findings</td></tr>
+      <tr><td><b>Testicular torsion</b> vs epididymitis</td><td class="g">16 → 38</td><td class="g">sudden onset during football; a high-riding testicle with a horizontal lie</td><td class="g">P(torsion) falls by the own prior shift; a second edit drops the sexual history, a risk factor for epididymitis</td></tr>
+      <tr><td><b>Diverticulitis</b> vs inflammatory bowel disease</td><td class="g">68 → 26</td><td class="g">the left lower quadrant location; years of constipation</td><td class="g">P(diverticulitis) falls by the own prior shift</td></tr>
+      <tr><td class="no">Fibroadenoma (excluded)</td><td class="g">23</td><td class="g">—</td><td class="g">the patient is 16 weeks pregnant, which is tied to her age and matters for the diagnosis</td></tr>
     </table></div>
-    <figcaption><b>Table 2.</b> Candidate pairs for the first study. Disease names come from <a href="https://github.com/mila-iqia/ddxplus">DDXPlus</a>, a synthetic differential-diagnosis dataset, and so does the severity in the last column. Contexts were checked against epidemiological estimates. Cues contain no rates or prevalences and no words such as common or rare; adjacent contexts should differ by at least 1 logit in prior odds. Each pair is crossed with four evidence levels, and a version that states the prior serves as a positive control. Which disease is labeled (A) varies across pairs, to balance position.</figcaption>
+    <figcaption><b>Table 2.</b> Examples from MedQA; the exam’s answer is in bold. Each item also drops sentences that no version can keep, such as a reference to an image or a menstrual history tied to the original age.</figcaption>
   </figure>
-  <p>The first study runs two open models: Qwen3-8B at six thinking levels (none; 512 and 2,048 tokens, interrupted; natural length; one and two “Wait” continuations) and gpt-oss at three effort levels.</p>
+  <p>The first runs use Qwen3-8B with thinking off and on, and gpt-oss-120b at low and high effort. More families follow (Qwen3-32B, DeepSeek-R1-0528-Qwen3-8B, OLMo-3-7B-Think), with a few API models for the thinking curve.</p>
 
-  <h3>Intervening on the trace</h3>
+  <h3>The implanted world (RQ4)</h3>
+  <div class="box"><ul class="dots">
+    <li><b>World.</b> Fictional diseases and settings, with designed base rates that change with age, place or season, and designed symptom probabilities: a small Bayes net.</li>
+    <li><b>Text.</b> The net becomes the kinds of text a model learns medicine from: surveillance bulletins, case reports, textbook entries. No single document states the whole prior.</li>
+    <li><b>Training.</b> Continued pretraining or LoRA on a reasoning model, with our earlier Bayes-net-to-text pipeline.</li>
+    <li><b>Test.</b> Probe what the model learned (its own prior against the designed one), then ask cases whose exact posterior we know, and split the error into knowledge and use.</li>
+    <li><b>Why fictional.</b> The truth is ours to set, nothing can be remembered from the web, and the same cases give the repair an exact reward.</li>
+  </ul></div>
+
+  <h3>Inside the trace (RQ3)</h3>
   <div class="chainbox"><div class="lbl">same item, same budget, three arms</div>
     <div class="chain">
       <span class="chip b">prefill the model’s own prior sentence → M = 1</span>
@@ -472,31 +495,31 @@ footer p + p { margin-top: 6px; }
       <li>If log-odds track k, the rule sharpens to <i>count, not weigh</i>. Position tests early commitment.</li>
     </ul></div>
     <div class="box"><div class="lbl">task framing</div><ul>
-      <li>One arm adds “use your general knowledge, including how common each disease is”.</li>
+      <li>One arm adds “take into account how common each condition is in a patient like this” (RQ2).</li>
       <li>It separates <i>cannot</i> use the prior from <i>will not</i>, as when a model treats the case as a closed world.</li>
     </ul></div>
   </div>
   <div class="two">
     <div class="box"><div class="lbl">three budget protocols</div><ul>
-      <li><b>Interrupted:</b> Qwen3 thinks up to N tokens (512 or 2,048), then gets the official wrap-up line and answers. These levels fill in the curve; the change Δρ is defined on the uninterrupted levels.</li>
+      <li><b>Interrupted:</b> Qwen3 thinks up to N tokens (512 or 2,048), then gets the official wrap-up line and answers. These levels fill in the curve; the main comparison uses the uninterrupted levels.</li>
       <li><b>Planned:</b> the model knows its budget (gpt-oss low, medium, high effort).</li>
       <li><b>Extended:</b> when Qwen3 tries to stop, the trace forks; one branch answers, the other gets “Wait” and thinks on, as in <a href="https://arxiv.org/abs/2501.19393">s1</a>. One trace yields paired answers at three lengths.</li>
       <li>Every level reports overflow, real token counts and parse rates.</li>
     </ul></div>
-    <div class="box"><div class="lbl">origin (RQ4)</div><ul>
+    <div class="box"><div class="lbl">origin (optional)</div><ul>
       <li><a href="https://huggingface.co/allenai/Olmo-3-7B-Think">OLMo-3-7B-Think</a> publishes SFT and DPO models and 55 RLVR checkpoints (steps 25 to 1375), plus RL-Zero runs from the base model on math, code, IF, general and mixed data.</li>
       <li>Inference only. The prediction is two-sided: RL on closed-world math may teach “use only what is written”, but RL is also reported to improve recall of parametric facts.</li>
     </ul></div>
   </div>
 
   <h3>The repair (RQ5)</h3>
-  <div class="box b"><div class="lbl">RL toward the normative posterior</div><ul class="dots">
-    <li><b>Target.</b> Real disease pairs with context cues. Prior from epidemiology, likelihood from DDXPlus, posterior by Bayes. On real pairs this rewards accurate knowledge as well as correct use, and training may move x̂ itself. Stretch: an implanted world of fictional diseases, where the posterior is exact and only use is tested.</li>
-    <li><b>Reward.</b> A proper scoring rule (Brier or log score) against the target posterior, scored at several cut points of the same trace and at its end, so the weight holds at every length.</li>
+  <div class="box b"><div class="lbl">RL toward the right use</div><ul class="dots">
+    <li><b>Targets.</b> In the implanted world, the exact posterior. In real cases, where no truth exists, coherence: across two ages, the answer must move as far as the model’s own prior does.</li>
+    <li><b>Reward.</b> A proper scoring rule (Brier or log score) against the target, scored at several cut points of the same trace and at its end, so the weight holds at every length.</li>
     <li><b>Arms.</b> Final-answer reward only (does RL learn to write the prior, or to use it silently?); the same plus a process reward for stating the prior; plain right-or-wrong RLVR.</li>
-    <li><b>Guard.</b> Track β<sub>evid</sub>. Buying prior weight by ignoring the symptoms is a reward hack, and the posterior target penalizes it.</li>
+    <li><b>Guard.</b> Track how the answer responds to the findings. Buying prior weight by ignoring the evidence is a reward hack, and both targets penalize it.</li>
     <li><b>Setup.</b> GRPO with LoRA on Qwen3-4B, then 8B, with math RLVR data mixed in.</li>
-    <li><b>Test.</b> Held-out pairs, real cases and one non-medical base-rate domain, with no loss on math and general benchmarks.</li>
+    <li><b>Test.</b> Held-out worlds, MedQA cases and one non-medical base-rate domain, with no loss on math and general benchmarks.</li>
   </ul>
   <p class="small">Closest methods: <a href="https://arxiv.org/abs/2609.38005">Sun et al. (2026)</a> reward the true posterior, but base rates come from examples in the prompt; <a href="https://arxiv.org/abs/2608.18581">VAKE (2026)</a> trains a model to write knowledge out and then to use it unwritten, for factual QA; <a href="https://arxiv.org/abs/2507.16806">RLCR (2025)</a> calibrates confidence, not the use of a prior. Two searches found nothing that combines a prior held only in the weights, a posterior reward, robustness to reasoning length and a check on whether the prior is written.</p>
   </div>
@@ -505,17 +528,17 @@ footer p + p { margin-top: 6px; }
   <figure>
     <div class="tscroll"><table class="t">
       <tr><th style="width:42px"></th><th>What</th><th style="width:30%">Models</th><th style="width:10%">Answers</th></tr>
-      <tr><td class="n">E0</td><td>Measurement checks: stated prior at 3–5 levels (positive control); test–retest of x̂; the cue moves x̂ by at least 1 logit; the answer is P(disease | symptoms), not the reverse; sample size by parameter recovery</td><td class="g">Qwen3-8B, gpt-oss</td><td class="g">can we measure it</td></tr>
-      <tr><td class="n">E1</td><td>Main curve: budget × how the prior appears (omitted; the model’s own elicited prior written into the prompt; a stated prevalence as positive control) × evidence strength; task-framing arm</td><td class="g">open reasoning models (Qwen3-8B/32B, gpt-oss, OLMo-3-7B-Think, DeepSeek-R1-0528-Qwen3-8B), plus 2–3 API models</td><td><span class="pill">RQ1</span></td></tr>
-      <tr><td class="n">E2</td><td>Mediation: own-prior prefill, neutral prefill and on-policy suppression × budget; how answers change around the trace’s first mention of prevalence</td><td class="g">open models</td><td><span class="pill">RQ2</span></td></tr>
-      <tr><td class="n">E3</td><td>Dose and position: k restatements of a symptom or of the prior × early or late</td><td class="g">open models</td><td><span class="pill">RQ3</span></td></tr>
-      <tr><td class="n">E4</td><td>Origin: OLMo-3-7B-Think from SFT to DPO and about 10 RLVR steps; RL-Zero-Math against General and IF</td><td class="g">OLMo-3</td><td><span class="pill">RQ4</span></td></tr>
-      <tr><td class="n">E5</td><td>Repair: GRPO with the three reward arms, scored with the E1–E3 measures</td><td class="g">Qwen3-4B with LoRA, then 8B</td><td><span class="pill">RQ5</span></td></tr>
-      <tr><td class="n">E6</td><td>Transfer: held-out pairs, real cases, a non-medical base-rate domain; the E5 models against prompt fixes such as “state the prior first”</td><td class="g">part of E1, plus the E5 models</td><td class="g">does it carry over</td></tr>
-      <tr><td class="n">S1</td><td><i>Stretch.</i> Implant true priors for fictional diseases with our earlier pipeline (copied, not modified)</td><td class="g">Qwen3-8B</td><td class="g">ground truth</td></tr>
+      <tr><td class="n">E0</td><td>Measurement checks: the age moves the own prior by at least 1 logit; test–retest of x̂; stated against behavioral prior; edits checked by a clinician; original against edited items</td><td class="g">Qwen3-8B, gpt-oss</td><td class="g">can we measure it</td></tr>
+      <tr><td class="n">E1</td><td>Coherence in exam cases: two ages × two evidence strengths × thinking levels</td><td class="g">open reasoning models (Qwen3-8B/32B, gpt-oss, OLMo-3-7B-Think, DeepSeek-R1-0528-Qwen3-8B), plus 2–3 API models</td><td><span class="pill">RQ1</span> <span class="pill">RQ2</span></td></tr>
+      <tr><td class="n">E2</td><td>Reminder arm and trace coding: what the trace states, computes and uses</td><td class="g">open models</td><td><span class="pill">RQ2</span> <span class="pill">RQ3</span></td></tr>
+      <tr><td class="n">E3</td><td>Trace interventions: own-prior prefill, neutral prefill, on-policy suppression; k restatements, early or late</td><td class="g">open models</td><td><span class="pill">RQ3</span></td></tr>
+      <tr><td class="n">E4</td><td>Implanted world: train, probe the learned priors, split knowledge and use</td><td class="g">Qwen3-8B with LoRA, or OLMo-3</td><td><span class="pill">RQ4</span></td></tr>
+      <tr><td class="n">E5</td><td>Repair: GRPO with exact-posterior and coherence rewards, scored with the E1–E3 measures</td><td class="g">Qwen3-4B with LoRA, then 8B</td><td><span class="pill">RQ5</span></td></tr>
+      <tr><td class="n">E6</td><td>Transfer: held-out worlds, exam cases, a non-medical base-rate domain; against prompt fixes such as “state the base rate first”</td><td class="g">part of E1, plus the E5 models</td><td class="g">does it carry over</td></tr>
+      <tr><td class="n">S1</td><td><i>Optional.</i> Origin: OLMo-3-7B-Think from SFT to DPO and about 10 RLVR steps</td><td class="g">OLMo-3</td><td class="g">where it comes from</td></tr>
       <tr><td class="n">S2</td><td><i>Stretch.</i> Attention knockout from the answer to the cue: does the prior’s effect vanish only when the trace never mentions it?</td><td class="g">Qwen3-8B</td><td class="g">mechanism</td></tr>
     </table></div>
-    <figcaption><b>Table 3.</b> E0–E3 need inference only. API models only check the budget curve, since many APIs ignore assistant prefill and do not return editable traces.</figcaption>
+    <figcaption><b>Table 3.</b> E0–E3 need inference only; E4 and E5 train. API models only check the thinking curve, since many APIs ignore assistant prefill and do not return editable traces.</figcaption>
   </figure>
 </section>
 
@@ -582,18 +605,18 @@ footer p + p { margin-top: 6px; }
 
   // Figure 2: schematic fingerprints. Values are shapes, not estimates.
   const FP = [
-    { name: "H_gate", say: "an unwritten prior fades", note: "symptom weight flat", label: true,
-      aria: "the natural line falls; prefill keeps the weight; suppression drives it to zero",
-      lines: { nat: [.75, .6, .45, .3], pre: [.75, .78, .78, .76], sup: [.75, .42, .18, .05] } },
-    { name: "H_recruit", say: "longer traces write the prior, and use it", note: "symptom weight flat",
-      aria: "the natural line rises; prefill lifts it early; suppression keeps it flat",
-      lines: { nat: [.4, .55, .7, .82], pre: [.4, .82, .85, .86], sup: [.4, .41, .41, .4] } },
-    { name: "H_amplify", say: "restated symptoms are counted twice", note: "symptom weight rises",
-      aria: "all three lines fall; prefill stays a little higher",
-      lines: { nat: [.75, .62, .5, .4], pre: [.75, .7, .61, .53], sup: [.75, .6, .48, .38] } },
-    { name: "H_silent", say: "the prior is used without being written", note: "all three lines coincide",
-      aria: "all three lines stay flat together",
-      lines: { nat: [.62, .62, .62, .62], pre: [.62, .635, .635, .635], sup: [.62, .605, .605, .605] } },
+    { name: "H_bayes", say: "thinking makes it Bayesian", note: "all three lines rise toward 1",
+      aria: "all three lines rise toward 1 as thinking grows",
+      lines: { nat: [.45, .6, .78, .92], pre: [.6, .72, .85, .95], sup: [.7, .8, .9, .97] } },
+    { name: "H_crowd", say: "strong evidence crowds the prior out", note: "the full case falls away", label: true,
+      aria: "the full-case line falls while the line with findings removed stays near 1",
+      lines: { nat: [.55, .45, .35, .27], pre: [.8, .83, .85, .86], sup: [.6, .55, .5, .46] } },
+    { name: "H_talk", say: "the prior is stated but not used", note: "flat, while traces state the prior more",
+      aria: "all three lines stay flat below 1",
+      lines: { nat: [.4, .41, .42, .42], pre: [.55, .56, .56, .57], sup: [.45, .47, .48, .49] } },
+    { name: "H_wont", say: "it can use the prior but does not unless asked", note: "the reminder lifts the line",
+      aria: "the spontaneous lines stay low while the reminder line rises near 1",
+      lines: { nat: [.35, .36, .36, .37], pre: [.45, .46, .46, .47], sup: [.85, .9, .93, .95] } },
   ];
   const host2 = document.querySelector("#f2 .mult");
   FP.forEach(d => {
@@ -623,14 +646,14 @@ footer p + p { margin-top: 6px; }
     tx(s, L, B + 16, "no thinking", "tk");
     tx(s, R, B + 16, "long", "tk", "end");
     tx(s, (L + R) / 2, B + 33, "thinking budget →", "tk", "middle");
-    [["sup", "s3", "suppressed"], ["nat", "s1", "as generated"], ["pre", "s2", "written in"]].forEach(([k, cls, lab]) => {
+    [["sup", "s3", "reminder"], ["nat", "s1", "full"], ["pre", "s2", "weakened"]].forEach(([k, cls, lab]) => {
       const pts = d.lines[k].map((v, i) => [X(i), Y(v)]);
       mk("path", { d: smooth(pts), class: "ln " + cls }, s);
       mk("circle", { cx: r1(pts[3][0]), cy: r1(pts[3][1]), r: 4, class: "dot " + cls }, s);
       if (d.label) tx(s, R + 9, r1(pts[3][1]) + 4, lab, "lab");
     });
     mk("circle", { cx: X(0), cy: r1(Y(d.lines.nat[0])), r: 4, class: "dot0" }, s);
-    tx(s, L - 7, T + 2, "ρ", "tk", "end");
+    tx(s, 2, T + 2, "slope", "tk");
   });
 
 })();
